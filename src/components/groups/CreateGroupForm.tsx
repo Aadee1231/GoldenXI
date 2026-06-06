@@ -8,7 +8,6 @@ import { createGroup } from "@/src/lib/supabase/queries/groups";
 export default function CreateGroupForm() {
   const router = useRouter();
   const [name, setName] = useState("");
-  const [tournamentId, setTournamentId] = useState("default");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,7 +16,7 @@ export default function CreateGroupForm() {
     setLoading(true);
     setError(null);
 
-    const result = await createGroup(name, tournamentId);
+    const result = await createGroup(name);
 
     if (result.success && result.group) {
       router.push(`/groups/${result.group.id}`);
@@ -46,21 +45,9 @@ export default function CreateGroupForm() {
         />
       </div>
 
-      <div>
-        <label htmlFor="tournament" className="mb-1.5 block text-sm text-zinc-400">
-          Tournament
-        </label>
-        <select
-          id="tournament"
-          value={tournamentId}
-          onChange={(e) => setTournamentId(e.target.value)}
-          className="w-full rounded-lg border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:border-yellow-400 focus:outline-none"
-        >
-          <option value="default">World Cup 2026</option>
-        </select>
-        <p className="mt-1 text-xs text-zinc-500">
-          More tournaments coming soon
-        </p>
+      <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+        <p className="text-sm text-zinc-400">Tournament</p>
+        <p className="font-medium text-white">World Cup 2026</p>
       </div>
 
       {error && (

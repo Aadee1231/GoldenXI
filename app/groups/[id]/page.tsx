@@ -1,12 +1,13 @@
-import { Suspense, useState } from "react";
+import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft, Users, Crown, Trophy, Copy, Check } from "lucide-react";
+import { ArrowLeft, Users, Crown, Trophy } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/src/lib/supabase/server";
 import { getGroupById } from "@/src/lib/supabase/queries/groups";
 import GroupMemberList from "@/src/components/groups/GroupMemberList";
 import GroupLeaderboard from "@/src/components/groups/GroupLeaderboard";
 import GroupActions from "@/src/components/groups/GroupActions";
+import CopyJoinCodeButton from "./CopyJoinCodeButton";
 
 interface GroupDetailPageProps {
   params: Promise<{ id: string }>;
@@ -70,7 +71,7 @@ async function GroupDetailContent({ groupId }: { groupId: string }) {
                 <code className="font-mono text-lg font-bold text-yellow-400">
                   {group.join_code}
                 </code>
-                <CopyButton code={group.join_code} />
+                <CopyJoinCodeButton joinCode={group.join_code} />
               </div>
             </div>
             <p className="text-xs text-zinc-500">
@@ -112,32 +113,6 @@ async function GroupDetailContent({ groupId }: { groupId: string }) {
         />
       </div>
     </div>
-  );
-}
-
-function CopyButton({ code }: { code: string }) {
-  "use client";
-  
-  const [copied, setCopied] = useState(false);
-  
-  async function handleCopy() {
-    await navigator.clipboard.writeText(code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
-  
-  return (
-    <button
-      onClick={handleCopy}
-      className="rounded p-1 text-zinc-500 transition-colors hover:text-yellow-400"
-      title="Copy code"
-    >
-      {copied ? (
-        <Check className="h-4 w-4 text-green-400" />
-      ) : (
-        <Copy className="h-4 w-4" />
-      )}
-    </button>
   );
 }
 

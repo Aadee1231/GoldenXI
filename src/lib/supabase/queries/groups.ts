@@ -14,8 +14,7 @@ function generateJoinCode(): string {
 }
 
 export async function createGroup(
-  name: string,
-  tournamentId: string
+  name: string
 ): Promise<{ success: boolean; group?: Group; error?: string }> {
   const supabase = await createClient();
 
@@ -24,6 +23,8 @@ export async function createGroup(
   if (authError || !user) {
     return { success: false, error: "You must be logged in to create a group" };
   }
+
+  console.log("Current user ID:", user.id);
 
   // Generate unique join code
   let joinCode = generateJoinCode();
@@ -48,30 +49,38 @@ export async function createGroup(
     return { success: false, error: "Failed to generate unique join code" };
   }
 
+  // Build and log the create group payload (no tournament_id - uses DB default)
+  const createGroupPayload = {
+    name,
+    join_code: joinCode,
+    created_by: user.id,
+  };
+  console.log("Group insert payload:", createGroupPayload);
+
   // Create the group
   const { data: group, error: insertError } = await supabase
     .from("groups")
-    .insert({
-      name,
-      join_code: joinCode,
-      created_by: user.id,
-      tournament_id: tournamentId,
-    })
+    .insert(createGroupPayload)
     .select()
     .single();
+
+  console.log("Created group result:", group);
 
   if (insertError) {
     return { success: false, error: insertError.message };
   }
 
-  // Add creator as first member
+  // Add creator as first member (owner role)
+  const groupMemberPayload = {
+    group_id: group.id,
+    user_id: user.id,
+    role: "owner",
+  };
+  console.log("Group member insert payload:", groupMemberPayload);
+
   const { error: memberError } = await supabase
     .from("group_members")
-    .insert({
-      group_id: group.id,
-      user_id: user.id,
-      bracket_id: null,
-    });
+    .insert(groupMemberPayload);
 
   if (memberError) {
     // Rollback group creation if member insertion fails
