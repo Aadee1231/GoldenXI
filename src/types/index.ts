@@ -54,6 +54,7 @@ export type Bracket = {
   is_locked: boolean;
   status: "draft" | "submitted" | "scored";
   submitted_at: string | null;
+  locked_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -75,6 +76,12 @@ export type Group = {
   join_code: string;
   created_by: string;
   tournament_id: string;
+  invite_policy: "admin_only" | "members";
+  leaderboard_visibility: "always" | "after_lock" | "after_first_result";
+  bracket_visibility: "status_only" | "after_lock" | "always";
+  lock_at: string | null;
+  allow_late_join: boolean;
+  description: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -112,4 +119,15 @@ export type LeaderboardEntry = {
   champion_flag: string | null;
   champion_code: string | null;
   submitted_at: string | null;
+  is_eligible?: boolean;
+  eligibility_status?: "eligible" | "not_submitted" | "submitted_late" | "edited_after_lock";
+};
+
+export type GroupSettings = {
+  invite_policy: "admin_only" | "members";
+  leaderboard_visibility: "always" | "after_lock" | "after_first_result";
+  bracket_visibility: "status_only" | "after_lock" | "always";
+  lock_at: string | null;
+  allow_late_join: boolean;
+  description: string | null;
 };

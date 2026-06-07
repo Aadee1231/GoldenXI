@@ -149,7 +149,7 @@ export async function fetchLeaderboard(
 }
 
 /**
- * Fetch group leaderboard for a specific group
+ * Fetch group leaderboard for a specific group with eligibility status
  * Shows all members, even if they haven't submitted
  */
 export async function fetchGroupLeaderboard(
@@ -164,9 +164,9 @@ export async function fetchGroupLeaderboard(
       return { data: [], error: tournamentError || "No active tournament found" };
     }
 
-    // Get group leaderboard data using RPC function
+    // Get group leaderboard data with eligibility using new RPC function
     const { data: leaderboardData, error: rpcError } = await supabase
-      .rpc("get_group_leaderboard", {
+      .rpc("get_group_leaderboard_with_eligibility", {
         group_id_param: groupId,
         tournament_id_param: tournamentId,
       });
@@ -204,6 +204,15 @@ export async function fetchGroupLeaderboard(
       console.error("Error fetching matches:", matchesError);
     }
 
+    // Get group lock time to determine eligibility status
+    const { data: groupData } = await supabase
+      .from("groups")
+      .select("lock_at")
+      .eq("id", groupId)
+      .single();
+
+    const groupLockAt = groupData?.lock_at;
+
     // Calculate scores for each member
     const entries: LeaderboardEntry[] = leaderboardData.map((row: {
       user_id: string;
@@ -214,10 +223,30 @@ export async function fetchGroupLeaderboard(
       bracket_name: string | null;
       bracket_status: string | null;
       submitted_at: string | null;
+      updated_at: string | null;
+      locked_at: string | null;
       champion_name: string | null;
       champion_code: string | null;
       champion_flag: string | null;
+      is_eligible: boolean;
     }) => {
+      // Determine eligibility status
+      let eligibilityStatus: "eligible" | "not_submitted" | "submitted_late" | "edited_after_lock" = "eligible";
+      
+      if (!row.bracket_id) {
+        eligibilityStatus = "not_submitted";
+      } else if (groupLockAt && row.submitted_at) {
+        const lockTime = new Date(groupLockAt).getTime();
+        const submittedTime = new Date(row.submitted_at).getTime();
+        const updatedTime = row.updated_at ? new Date(row.updated_at).getTime() : submittedTime;
+
+        if (submittedTime > lockTime) {
+          eligibilityStatus = "submitted_late";
+        } else if (updatedTime > lockTime) {
+          eligibilityStatus = "edited_after_lock";
+        }
+      }
+
       // If no bracket, score is 0
       if (!row.bracket_id) {
         return {
@@ -234,6 +263,8 @@ export async function fetchGroupLeaderboard(
           champion_flag: null,
           champion_code: null,
           submitted_at: null,
+          is_eligible: false,
+          eligibility_status: eligibilityStatus,
         };
       }
 
@@ -244,6 +275,9 @@ export async function fetchGroupLeaderboard(
         matches || []
       );
 
+      // Ineligible members get 0 score for ranking
+      const displayScore = row.is_eligible ? totalScore : 0;
+
       return {
         rank: 0, // Will be set after sorting
         bracket_id: row.bracket_id,
@@ -252,17 +286,24 @@ export async function fetchGroupLeaderboard(
         username: row.username,
         display_name: row.display_name,
         avatar_url: row.avatar_url,
-        total_score: totalScore,
-        correct_picks: correctPicks,
+        total_score: displayScore,
+        correct_picks: row.is_eligible ? correctPicks : 0,
         champion_name: row.champion_name,
         champion_flag: row.champion_flag,
         champion_code: row.champion_code,
         submitted_at: row.submitted_at,
+        is_eligible: row.is_eligible,
+        eligibility_status: eligibilityStatus,
       };
     });
 
-    // Sort by: 1) total_score desc, 2) correct_picks desc, 3) submitted_at asc
+    // Sort by: 1) eligibility, 2) total_score desc, 3) correct_picks desc, 4) submitted_at asc
     entries.sort((a, b) => {
+      // Eligible members always rank above ineligible
+      if (a.is_eligible !== b.is_eligible) {
+        return a.is_eligible ? -1 : 1;
+      }
+      
       if (b.total_score !== a.total_score) {
         return b.total_score - a.total_score;
       }

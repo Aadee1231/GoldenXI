@@ -354,3 +354,145 @@ export async function submitBracket(
     };
   }
 }
+
+/**
+ * Lock a bracket (user cannot edit after this)
+ * Only allowed if bracket is complete (15 picks) and not already locked
+ */
+export async function lockBracket(
+  bracketId: string
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient();
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { success: false, error: "You must be logged in" };
+  }
+
+  const { data: bracket, error: bracketError } = await supabase
+    .from("brackets")
+    .select("*, bracket_picks(id)")
+    .eq("id", bracketId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (bracketError || !bracket) {
+    return { success: false, error: "Bracket not found" };
+  }
+
+  if (bracket.locked_at) {
+    return { success: false, error: "Bracket is already locked" };
+  }
+
+  const pickCount = bracket.bracket_picks?.length || 0;
+  if (pickCount < 15) {
+    return { success: false, error: "Cannot lock incomplete bracket. You need 15 picks." };
+  }
+
+  const now = new Date().toISOString();
+  const { error: updateError } = await supabase
+    .from("brackets")
+    .update({
+      locked_at: now,
+      is_locked: true,
+      status: "submitted",
+      submitted_at: bracket.submitted_at || now,
+    })
+    .eq("id", bracketId);
+
+  if (updateError) {
+    return { success: false, error: updateError.message };
+  }
+
+  return { success: true };
+}
+
+/**
+ * Unlock a bracket (only allowed if tournament hasn't started)
+ */
+export async function unlockBracket(
+  bracketId: string
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient();
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { success: false, error: "You must be logged in" };
+  }
+
+  const { data: bracket, error: bracketError } = await supabase
+    .from("brackets")
+    .select("tournament_id, user_id, locked_at")
+    .eq("id", bracketId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (bracketError || !bracket) {
+    return { success: false, error: "Bracket not found" };
+  }
+
+  if (!bracket.locked_at) {
+    return { success: false, error: "Bracket is not locked" };
+  }
+
+  const { data: hasStarted, error: tournamentError } = await supabase
+    .rpc("has_tournament_started", { tournament_id_param: bracket.tournament_id });
+
+  if (tournamentError) {
+    return { success: false, error: "Failed to check tournament status" };
+  }
+
+  if (hasStarted) {
+    return { success: false, error: "Cannot unlock bracket after tournament has started" };
+  }
+
+  const { error: updateError } = await supabase
+    .from("brackets")
+    .update({
+      locked_at: null,
+      is_locked: false,
+    })
+    .eq("id", bracketId);
+
+  if (updateError) {
+    return { success: false, error: updateError.message };
+  }
+
+  return { success: true };
+}
+
+/**
+ * Check if a bracket can be unlocked
+ */
+export async function canUnlockBracket(
+  bracketId: string
+): Promise<{ canUnlock: boolean; reason?: string }> {
+  const supabase = await createClient();
+
+  const { data: bracket, error: bracketError } = await supabase
+    .from("brackets")
+    .select("tournament_id, locked_at")
+    .eq("id", bracketId)
+    .single();
+
+  if (bracketError || !bracket) {
+    return { canUnlock: false, reason: "Bracket not found" };
+  }
+
+  if (!bracket.locked_at) {
+    return { canUnlock: false, reason: "Bracket is not locked" };
+  }
+
+  const { data: hasStarted, error: tournamentError } = await supabase
+    .rpc("has_tournament_started", { tournament_id_param: bracket.tournament_id });
+
+  if (tournamentError) {
+    return { canUnlock: false, reason: "Failed to check tournament status" };
+  }
+
+  if (hasStarted) {
+    return { canUnlock: false, reason: "Tournament has started" };
+  }
+
+  return { canUnlock: true };
+}

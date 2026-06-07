@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { ArrowLeft, Users, Crown, Trophy, CheckCircle, XCircle, Edit } from "lucide-react";
+import { ArrowLeft, Users, Crown, Trophy, CheckCircle, XCircle, Edit, Settings } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/src/lib/supabase/server";
 import { getGroupById, getGroupMembersWithBrackets, getCurrentUserBracket } from "@/src/lib/supabase/queries/groups";
@@ -59,18 +59,29 @@ async function GroupDetailContent({ groupId }: { groupId: string }) {
       {/* Group Header */}
       <div className="rounded-xl border border-white/10 bg-white/5 p-6">
         <div className="flex items-start justify-between gap-4">
-          <div>
+          <div className="flex-1">
             <h1 className="text-2xl font-bold text-white">{group.name}</h1>
             <p className="mt-1 text-sm text-zinc-400">
               Group ID: {group.id}
             </p>
           </div>
-          {isCreator && (
-            <span className="flex items-center gap-1 rounded-full bg-yellow-400/20 px-2 py-1 text-xs font-medium text-yellow-400">
-              <Crown className="h-3 w-3" />
-              Creator
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {isCreator && (
+              <>
+                <Link
+                  href={`/groups/${groupId}/settings`}
+                  className="flex items-center gap-2 rounded-lg border border-white/15 px-3 py-2 text-sm font-medium text-zinc-300 transition hover:border-white/30 hover:text-white"
+                >
+                  <Settings className="h-4 w-4" />
+                  Settings
+                </Link>
+                <span className="flex items-center gap-1 rounded-full bg-yellow-400/20 px-2 py-1 text-xs font-medium text-yellow-400">
+                  <Crown className="h-3 w-3" />
+                  Creator
+                </span>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Join Code */}

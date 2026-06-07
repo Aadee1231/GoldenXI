@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { RotateCcw, Save, Trophy, Send, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { RotateCcw, Save, Trophy, Send, Loader2, CheckCircle, AlertCircle, Lock, Unlock } from "lucide-react";
 import { getBracketMatches } from "@/src/lib/supabase/queries/matches-client";
-import { saveBracket, submitBracket, getUserBracket } from "@/src/lib/supabase/queries/brackets-client";
+import { saveBracket, submitBracket, getUserBracket, lockBracket, unlockBracket, canUnlockBracket } from "@/src/lib/supabase/queries/brackets-client";
 import type { BracketPickInput } from "@/src/lib/supabase/queries/brackets-client";
-import type { Team } from "@/src/types";
+import type { Team, Bracket } from "@/src/types";
 import BracketRound from "./BracketRound";
 
 // Match structure compatible with existing UI components
@@ -68,7 +68,10 @@ function getTeamById(
 export default function BracketPageV2() {
   const [bracket, setBracket] = useState<BracketState | null>(null);
   const [bracketId, setBracketId] = useState<string | null>(null);
+  const [bracketData, setBracketData] = useState<Bracket | null>(null);
   const [bracketStatus, setBracketStatus] = useState<"draft" | "submitted" | "scored">("draft");
+  const [isLocked, setIsLocked] = useState(false);
+  const [canUnlock, setCanUnlock] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingBracket, setIsLoadingBracket] = useState(true);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -141,7 +144,15 @@ export default function BracketPageV2() {
         console.log("📥 Loaded picks:", picks);
 
         setBracketId(existingBracket.id);
+        setBracketData(existingBracket);
         setBracketStatus(existingBracket.status);
+        setIsLocked(!!existingBracket.locked_at);
+
+        // Check if can unlock
+        if (existingBracket.locked_at) {
+          const unlockStatus = await canUnlockBracket(existingBracket.id);
+          setCanUnlock(unlockStatus.canUnlock);
+        }
 
         // Apply picks to matches
         picks.forEach((pick) => {
@@ -198,6 +209,11 @@ export default function BracketPageV2() {
 
   const handlePick = useCallback(
     (matchId: string, teamId: string) => {
+      if (isLocked) {
+        setMessage({ type: "error", text: "Cannot modify a locked bracket" });
+        return;
+      }
+
       if (bracketStatus === "submitted") {
         setMessage({ type: "error", text: "Cannot modify a submitted bracket" });
         return;
@@ -273,10 +289,15 @@ export default function BracketPageV2() {
         return next;
       });
     },
-    [bracketStatus, bracket]
+    [bracketStatus, bracket, isLocked]
   );
 
   const handleReset = async () => {
+    if (isLocked) {
+      setMessage({ type: "error", text: "Cannot reset a locked bracket" });
+      return;
+    }
+
     if (bracketStatus === "submitted") {
       setMessage({ type: "error", text: "Cannot reset a submitted bracket" });
       return;
@@ -354,6 +375,11 @@ export default function BracketPageV2() {
   };
 
   const handleSave = async () => {
+    if (isLocked) {
+      setMessage({ type: "error", text: "Cannot modify a locked bracket" });
+      return;
+    }
+
     if (bracketStatus === "submitted") {
       setMessage({ type: "error", text: "Cannot modify a submitted bracket" });
       return;
@@ -405,6 +431,57 @@ export default function BracketPageV2() {
     setIsLoading(false);
   };
 
+  const handleLock = async () => {
+    if (!bracketId) {
+      setMessage({ type: "error", text: "No bracket to lock" });
+      return;
+    }
+
+    const picks = getPicksFromBracket();
+    if (picks.length < 15) {
+      setMessage({ type: "error", text: "Cannot lock incomplete bracket. Complete all 15 picks first." });
+      return;
+    }
+
+    setIsLoading(true);
+    setMessage(null);
+
+    const result = await lockBracket(bracketId);
+
+    if (result.success) {
+      setIsLocked(true);
+      setBracketStatus("submitted");
+      setMessage({ type: "success", text: "Bracket locked! You can unlock it before the tournament starts." });
+    } else {
+      setMessage({ type: "error", text: result.error || "Failed to lock bracket" });
+    }
+
+    setIsLoading(false);
+  };
+
+  const handleUnlock = async () => {
+    if (!bracketId) {
+      setMessage({ type: "error", text: "No bracket to unlock" });
+      return;
+    }
+
+    setIsLoading(true);
+    setMessage(null);
+
+    const result = await unlockBracket(bracketId);
+
+    if (result.success) {
+      setIsLocked(false);
+      setBracketStatus("draft");
+      setCanUnlock(false);
+      setMessage({ type: "success", text: "Bracket unlocked! You can now edit your picks." });
+    } else {
+      setMessage({ type: "error", text: result.error || "Failed to unlock bracket" });
+    }
+
+    setIsLoading(false);
+  };
+
   if (isLoadingBracket || !bracket) {
     return (
       <div className="min-h-screen px-4 py-24">
@@ -436,13 +513,33 @@ export default function BracketPageV2() {
           Click a team to advance them. Pick all {totalMatches} matches to crown your champion.
         </p>
 
-        {/* Status badge */}
-        {bracketStatus === "submitted" && (
-          <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-green-500/20 px-4 py-1 text-sm font-medium text-green-400">
-            <CheckCircle className="h-4 w-4" />
-            Bracket Submitted
-          </div>
-        )}
+        {/* Status badges */}
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+          {isLocked && (
+            <div className="inline-flex items-center gap-2 rounded-full bg-yellow-500/20 px-4 py-1 text-sm font-medium text-yellow-400">
+              <Lock className="h-4 w-4" />
+              Bracket Locked
+            </div>
+          )}
+          {bracketStatus === "submitted" && !isLocked && (
+            <div className="inline-flex items-center gap-2 rounded-full bg-green-500/20 px-4 py-1 text-sm font-medium text-green-400">
+              <CheckCircle className="h-4 w-4" />
+              Bracket Submitted
+            </div>
+          )}
+          {!isComplete && !isLocked && (
+            <div className="inline-flex items-center gap-2 rounded-full bg-zinc-500/20 px-4 py-1 text-sm font-medium text-zinc-400">
+              <AlertCircle className="h-4 w-4" />
+              Bracket Incomplete
+            </div>
+          )}
+          {isComplete && !isLocked && bracketStatus !== "submitted" && (
+            <div className="inline-flex items-center gap-2 rounded-full bg-blue-500/20 px-4 py-1 text-sm font-medium text-blue-400">
+              <CheckCircle className="h-4 w-4" />
+              Bracket Complete
+            </div>
+          )}
+        </div>
 
         {/* Progress bar */}
         <div className="mt-5 h-1.5 w-64 overflow-hidden rounded-full bg-white/10 mx-auto">
@@ -515,57 +612,81 @@ export default function BracketPageV2() {
 
       {/* Action buttons */}
       <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-        <button
-          type="button"
-          onClick={handleReset}
-          disabled={isLoading || bracketStatus === "submitted"}
-          className="flex items-center gap-2 rounded-xl border border-white/15 px-5 py-2.5 text-sm font-medium text-zinc-300 transition hover:border-white/30 hover:text-white disabled:opacity-50"
-        >
-          <RotateCcw className="h-4 w-4" />
-          Reset Bracket
-        </button>
+        {!isLocked && (
+          <>
+            <button
+              type="button"
+              onClick={handleReset}
+              disabled={isLoading}
+              className="flex items-center gap-2 rounded-xl border border-white/15 px-5 py-2.5 text-sm font-medium text-zinc-300 transition hover:border-white/30 hover:text-white disabled:opacity-50"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Reset Bracket
+            </button>
 
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={isLoading || bracketStatus === "submitted"}
-          className="flex items-center gap-2 rounded-xl bg-yellow-400 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-yellow-300 disabled:opacity-50"
-        >
-          {isLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="h-4 w-4" />
-          )}
-          Save Bracket
-        </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={isLoading}
+              className="flex items-center gap-2 rounded-xl bg-yellow-400 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-yellow-300 disabled:opacity-50"
+            >
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              Save Bracket
+            </button>
+          </>
+        )}
 
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={isLoading || bracketStatus === "submitted" || !isComplete}
-          className={`flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold transition disabled:opacity-50 ${
-            bracketStatus === "submitted"
-              ? "bg-green-500 text-white"
-              : isComplete
-              ? "bg-green-500 text-white hover:bg-green-400"
-              : "bg-zinc-600 text-zinc-300"
-          }`}
-        >
-          {isLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : bracketStatus === "submitted" ? (
-            <CheckCircle className="h-4 w-4" />
-          ) : (
-            <Send className="h-4 w-4" />
-          )}
-          {bracketStatus === "submitted" ? "Submitted" : "Submit Bracket"}
-        </button>
+        {isComplete && !isLocked && (
+          <button
+            type="button"
+            onClick={handleLock}
+            disabled={isLoading}
+            className="flex items-center gap-2 rounded-xl bg-green-500 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-green-400 disabled:opacity-50"
+          >
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Lock className="h-4 w-4" />
+            )}
+            Lock Bracket
+          </button>
+        )}
+
+        {isLocked && canUnlock && (
+          <button
+            type="button"
+            onClick={handleUnlock}
+            disabled={isLoading}
+            className="flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-orange-400 disabled:opacity-50"
+          >
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Unlock className="h-4 w-4" />
+            )}
+            Unlock Bracket
+          </button>
+        )}
       </div>
 
       {/* Help text */}
-      {bracketStatus !== "submitted" && !isComplete && (
+      {!isLocked && !isComplete && (
         <p className="mt-4 text-center text-xs text-zinc-500">
-          Complete all {totalMatches} picks to enable submission
+          Complete all {totalMatches} picks to lock your bracket
+        </p>
+      )}
+      {isLocked && !canUnlock && (
+        <p className="mt-4 text-center text-xs text-zinc-500">
+          Bracket is locked. Cannot unlock after tournament has started.
+        </p>
+      )}
+      {isLocked && canUnlock && (
+        <p className="mt-4 text-center text-xs text-zinc-500">
+          You can unlock your bracket before the tournament starts
         </p>
       )}
 

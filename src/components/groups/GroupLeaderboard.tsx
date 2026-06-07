@@ -1,4 +1,4 @@
-import { Medal } from "lucide-react";
+import { Medal, AlertTriangle, Clock, XCircle } from "lucide-react";
 import type { LeaderboardEntry } from "@/src/types";
 
 interface GroupLeaderboardProps {
@@ -66,15 +66,32 @@ export default function GroupLeaderboard({
 
                 {/* User */}
                 <div className="flex-1">
-                  <p className="font-medium text-white">
-                    {entry.display_name || entry.username || "Unknown Player"}
-                    {isCurrentUser && (
-                      <span className="ml-2 text-xs text-zinc-500">(you)</span>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-white">
+                      {entry.display_name || entry.username || "Unknown Player"}
+                      {isCurrentUser && (
+                        <span className="ml-2 text-xs text-zinc-500">(you)</span>
+                      )}
+                    </p>
+                    {entry.eligibility_status === "submitted_late" && (
+                      <span className="flex items-center gap-1 rounded-full bg-orange-500/20 px-2 py-0.5 text-xs font-medium text-orange-400">
+                        <Clock className="h-3 w-3" />
+                        Late
+                      </span>
                     )}
-                  </p>
-                  {!hasBracket && (
-                    <p className="text-xs text-zinc-500">No bracket submitted</p>
-                  )}
+                    {entry.eligibility_status === "edited_after_lock" && (
+                      <span className="flex items-center gap-1 rounded-full bg-red-500/20 px-2 py-0.5 text-xs font-medium text-red-400">
+                        <AlertTriangle className="h-3 w-3" />
+                        Edited After Lock
+                      </span>
+                    )}
+                    {entry.eligibility_status === "not_submitted" && (
+                      <span className="flex items-center gap-1 rounded-full bg-zinc-500/20 px-2 py-0.5 text-xs font-medium text-zinc-400">
+                        <XCircle className="h-3 w-3" />
+                        Not Submitted
+                      </span>
+                    )}
+                  </div>
                   {hasBracket && entry.champion_name && (
                     <p className="text-xs text-zinc-500">
                       {entry.champion_flag} {entry.champion_name}
