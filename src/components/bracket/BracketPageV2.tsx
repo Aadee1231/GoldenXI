@@ -2,14 +2,37 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { RotateCcw, Save, Trophy, Send, Loader2, CheckCircle, AlertCircle } from "lucide-react";
-import {
-  createInitialBracket,
-  type BracketState,
-  type MockTeam,
-} from "@/src/lib/mock-data/tournament";
-import { saveBracket, submitBracket, getUserBracket } from "@/src/lib/supabase/queries/brackets";
-import type { BracketPickInput } from "@/src/lib/supabase/queries/brackets";
+import { getBracketMatches } from "@/src/lib/supabase/queries/matches-client";
+import { saveBracket, submitBracket, getUserBracket } from "@/src/lib/supabase/queries/brackets-client";
+import type { BracketPickInput } from "@/src/lib/supabase/queries/brackets-client";
+import type { Team } from "@/src/types";
 import BracketRound from "./BracketRound";
+
+// Match structure compatible with existing UI components
+type UITeam = {
+  id: string;
+  name: string;
+  code: string;
+  flag: string;
+  seed: number;
+};
+
+type UIMatch = {
+  id: string; // Real UUID from database
+  homeTeam: UITeam | null;
+  awayTeam: UITeam | null;
+  winnerId: string | null;
+  round: "r16" | "qf" | "sf" | "final";
+  matchIndex: number;
+};
+
+type BracketState = {
+  r16: UIMatch[];
+  qf: UIMatch[];
+  sf: UIMatch[];
+  final: UIMatch[];
+  champion: UITeam | null;
+};
 
 const ROUNDS: Array<{ key: keyof Omit<BracketState, "champion">; label: string }> = [
   { key: "r16",   label: "Round of 16"  },
@@ -18,10 +41,21 @@ const ROUNDS: Array<{ key: keyof Omit<BracketState, "champion">; label: string }
   { key: "final", label: "Final"         },
 ];
 
+function convertTeamToUI(team: Team | null, seed: number = 0): UITeam | null {
+  if (!team) return null;
+  return {
+    id: team.id,
+    name: team.name,
+    code: team.code,
+    flag: team.flag_emoji || "🏳️",
+    seed,
+  };
+}
+
 function getTeamById(
   bracket: BracketState,
   teamId: string
-): MockTeam | undefined {
+) {
   for (const round of [bracket.r16, bracket.qf, bracket.sf, bracket.final]) {
     for (const match of round) {
       if (match.homeTeam?.id === teamId) return match.homeTeam;
@@ -31,25 +65,76 @@ function getTeamById(
   return undefined;
 }
 
-export default function BracketPage() {
-  const [bracket, setBracket] = useState<BracketState>(createInitialBracket);
+export default function BracketPageV2() {
+  const [bracket, setBracket] = useState<BracketState | null>(null);
   const [bracketId, setBracketId] = useState<string | null>(null);
   const [bracketStatus, setBracketStatus] = useState<"draft" | "submitted" | "scored">("draft");
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingBracket, setIsLoadingBracket] = useState(true);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // Load existing bracket on mount
+  // Load bracket matches and existing picks on mount
   useEffect(() => {
-    async function loadExistingBracket() {
+    async function loadBracket() {
+      console.log("🔄 Starting to load bracket...");
       setIsLoadingBracket(true);
-      const { bracket: existingBracket, picks, error } = await getUserBracket();
 
-      if (error) {
-        console.error("Failed to load bracket:", error);
+      try {
+        // Load matches from database
+        console.log("📡 Fetching bracket matches...");
+        const { data: matchesData, error: matchesError } = await getBracketMatches();
+      
+      console.log("📊 Matches data:", matchesData);
+      console.log("❌ Matches error:", matchesError);
+      
+      if (matchesError || !matchesData) {
+        console.error("Failed to load matches:", matchesError);
+        setMessage({ type: "error", text: matchesError || "Failed to load matches. Please run the seed SQL." });
         setIsLoadingBracket(false);
         return;
       }
+
+      // Convert to UI format
+      const initialBracket: BracketState = {
+        r16: matchesData.r16.map((m, i) => ({
+          id: m.id,
+          homeTeam: convertTeamToUI(m.homeTeam, i * 2 + 1),
+          awayTeam: convertTeamToUI(m.awayTeam, i * 2 + 2),
+          winnerId: null,
+          round: "r16" as const,
+          matchIndex: i,
+        })),
+        qf: matchesData.qf.map((m, i) => ({
+          id: m.id,
+          homeTeam: convertTeamToUI(m.homeTeam, 0),
+          awayTeam: convertTeamToUI(m.awayTeam, 0),
+          winnerId: null,
+          round: "qf" as const,
+          matchIndex: i,
+        })),
+        sf: matchesData.sf.map((m, i) => ({
+          id: m.id,
+          homeTeam: convertTeamToUI(m.homeTeam, 0),
+          awayTeam: convertTeamToUI(m.awayTeam, 0),
+          winnerId: null,
+          round: "sf" as const,
+          matchIndex: i,
+        })),
+        final: matchesData.final.map((m, i) => ({
+          id: m.id,
+          homeTeam: convertTeamToUI(m.homeTeam, 0),
+          awayTeam: convertTeamToUI(m.awayTeam, 0),
+          winnerId: null,
+          round: "final" as const,
+          matchIndex: i,
+        })),
+        champion: null,
+      };
+
+      // Load existing bracket picks
+      console.log("📡 Fetching user bracket...");
+      const { bracket: existingBracket, picks, error: picksError } = await getUserBracket();
+      console.log("📥 User bracket result:", { existingBracket, picks, picksError });
 
       if (existingBracket && picks.length > 0) {
         console.log("📥 Loaded existing bracket:", existingBracket);
@@ -58,28 +143,24 @@ export default function BracketPage() {
         setBracketId(existingBracket.id);
         setBracketStatus(existingBracket.status);
 
-        // Restore picks into bracket state
-        const newBracket = createInitialBracket();
-
         // Apply picks to matches
         picks.forEach((pick) => {
-          const roundKey = pick.match_id.split("-")[0] as keyof Omit<BracketState, "champion">;
-          if (roundKey && newBracket[roundKey]) {
-            const match = newBracket[roundKey].find((m) => m.id === pick.match_id);
+          // Find match by UUID
+          for (const roundKey of ["r16", "qf", "sf", "final"] as const) {
+            const match = initialBracket[roundKey].find((m) => m.id === pick.match_id);
             if (match && pick.picked_team_id) {
-              // Simulate picking the winner
-              const team = getTeamById(newBracket, pick.picked_team_id);
+              const team = getTeamById(initialBracket, pick.picked_team_id);
               if (team) {
                 match.winnerId = pick.picked_team_id;
 
                 // Advance to next round
                 const roundOrder: Array<keyof Omit<BracketState, "champion">> = ["r16", "qf", "sf", "final"];
                 const ri = roundOrder.indexOf(roundKey);
-                const matchIdx = newBracket[roundKey].findIndex((m) => m.id === pick.match_id);
+                const matchIdx = initialBracket[roundKey].findIndex((m) => m.id === pick.match_id);
                 const nextRoundKey = roundOrder[ri + 1];
 
                 if (nextRoundKey && matchIdx >= 0) {
-                  const nextMatches = newBracket[nextRoundKey];
+                  const nextMatches = initialBracket[nextRoundKey];
                   const nextMatchIdx = Math.floor(matchIdx / 2);
                   const isHome = matchIdx % 2 === 0;
 
@@ -94,31 +175,39 @@ export default function BracketPage() {
 
                 // Set champion if final
                 if (roundKey === "final") {
-                  newBracket.champion = team;
+                  initialBracket.champion = team;
                 }
               }
             }
           }
         });
-
-        setBracket(newBracket);
       }
 
-      setIsLoadingBracket(false);
+        console.log("✅ Bracket loaded successfully:", initialBracket);
+        setBracket(initialBracket);
+        setIsLoadingBracket(false);
+      } catch (err) {
+        console.error("💥 Error in loadBracket:", err);
+        setMessage({ type: "error", text: `Error loading bracket: ${err instanceof Error ? err.message : String(err)}` });
+        setIsLoadingBracket(false);
+      }
     }
 
-    loadExistingBracket();
+    loadBracket();
   }, []);
 
   const handlePick = useCallback(
     (matchId: string, teamId: string) => {
-      // Don't allow picks if bracket is submitted
       if (bracketStatus === "submitted") {
         setMessage({ type: "error", text: "Cannot modify a submitted bracket" });
         return;
       }
 
+      if (!bracket) return;
+
       setBracket((prev) => {
+        if (!prev) return prev;
+
         const next: BracketState = {
           r16:      prev.r16.map((m) => ({ ...m })),
           qf:       prev.qf.map((m) => ({ ...m })),
@@ -184,26 +273,76 @@ export default function BracketPage() {
         return next;
       });
     },
-    [bracketStatus]
+    [bracketStatus, bracket]
   );
 
-  const handleReset = () => {
+  const handleReset = async () => {
     if (bracketStatus === "submitted") {
       setMessage({ type: "error", text: "Cannot reset a submitted bracket" });
       return;
     }
-    setBracket(createInitialBracket());
+
+    // Reload fresh matches
+    setIsLoadingBracket(true);
+    const { data: matchesData, error } = await getBracketMatches();
+    
+    if (error || !matchesData) {
+      setMessage({ type: "error", text: "Failed to reset bracket" });
+      setIsLoadingBracket(false);
+      return;
+    }
+
+    const freshBracket: BracketState = {
+      r16: matchesData.r16.map((m, i) => ({
+        id: m.id,
+        homeTeam: convertTeamToUI(m.homeTeam),
+        awayTeam: convertTeamToUI(m.awayTeam),
+        winnerId: null,
+        round: "r16" as const,
+        matchIndex: i,
+      })),
+      qf: matchesData.qf.map((m, i) => ({
+        id: m.id,
+        homeTeam: null,
+        awayTeam: null,
+        winnerId: null,
+        round: "qf" as const,
+        matchIndex: i,
+      })),
+      sf: matchesData.sf.map((m, i) => ({
+        id: m.id,
+        homeTeam: null,
+        awayTeam: null,
+        winnerId: null,
+        round: "sf" as const,
+        matchIndex: i,
+      })),
+      final: matchesData.final.map((m, i) => ({
+        id: m.id,
+        homeTeam: null,
+        awayTeam: null,
+        winnerId: null,
+        round: "final" as const,
+        matchIndex: i,
+      })),
+      champion: null,
+    };
+
+    setBracket(freshBracket);
     setMessage(null);
+    setIsLoadingBracket(false);
   };
 
   const getPicksFromBracket = (): BracketPickInput[] => {
+    if (!bracket) return [];
+
     const picks: BracketPickInput[] = [];
 
     ROUNDS.forEach(({ key }) => {
       bracket[key].forEach((match) => {
         if (match.winnerId) {
           picks.push({
-            match_id: match.id,
+            match_id: match.id, // Real UUID
             picked_team_id: match.winnerId,
             round: key as "r16" | "qf" | "sf" | "final",
           });
@@ -266,6 +405,17 @@ export default function BracketPage() {
     setIsLoading(false);
   };
 
+  if (isLoadingBracket || !bracket) {
+    return (
+      <div className="min-h-screen px-4 py-24">
+        <div className="flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-yellow-400" />
+          <span className="ml-3 text-zinc-400">Loading bracket...</span>
+        </div>
+      </div>
+    );
+  }
+
   const pickedCount =
     bracket.r16.filter((m) => m.winnerId).length +
     bracket.qf.filter((m) => m.winnerId).length +
@@ -274,17 +424,6 @@ export default function BracketPage() {
 
   const totalMatches = 8 + 4 + 2 + 1;
   const isComplete = pickedCount === totalMatches;
-
-  if (isLoadingBracket) {
-    return (
-      <div className="min-h-screen px-4 py-24">
-        <div className="flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-yellow-400" />
-          <span className="ml-3 text-zinc-400">Loading your bracket...</span>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen px-4 py-24">
@@ -445,18 +584,37 @@ function clearDownstream(
   fromRoundIdx: number,
   fromMatchIdx: number
 ) {
-  let matchIdx = fromMatchIdx;
   for (let ri = fromRoundIdx; ri < roundOrder.length; ri++) {
     const roundKey = roundOrder[ri];
     const matches = bracket[roundKey];
-    if (matchIdx >= matches.length) break;
-    const m = matches[matchIdx];
-    m.winnerId = null;
 
-    if (ri === roundOrder.length - 1) {
-      bracket.champion = null;
+    if (ri === fromRoundIdx) {
+      const match = matches[fromMatchIdx];
+      match.winnerId = null;
+
+      const nextRoundKey = roundOrder[ri + 1];
+      if (nextRoundKey) {
+        const nextMatches = bracket[nextRoundKey];
+        const nextMatchIdx = Math.floor(fromMatchIdx / 2);
+        const isHome = fromMatchIdx % 2 === 0;
+
+        if (nextMatchIdx < nextMatches.length) {
+          const nextMatch = nextMatches[nextMatchIdx];
+          if (isHome) {
+            nextMatch.homeTeam = null;
+          } else {
+            nextMatch.awayTeam = null;
+          }
+        }
+      }
+    } else {
+      matches.forEach((m) => {
+        m.winnerId = null;
+        m.homeTeam = null;
+        m.awayTeam = null;
+      });
     }
-
-    matchIdx = Math.floor(matchIdx / 2);
   }
+
+  bracket.champion = null;
 }

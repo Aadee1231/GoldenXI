@@ -51,6 +51,7 @@ export type Bracket = {
   name: string;
   points_earned: number;
   is_locked: boolean;
+  status: "draft" | "submitted" | "scored";
   created_at: string;
   updated_at: string;
 };

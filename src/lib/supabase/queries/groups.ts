@@ -146,44 +146,43 @@ export async function joinGroup(
 
 export async function getGroupById(
   groupId: string
-): Promise<GroupWithDetails | null> {
+): Promise<{ group: Group | null; error: string | null }> {
   const supabase = await createClient();
 
-  // Get group with tournament info
+  // Get group with only basic fields - no complex joins
   const { data: group, error: groupError } = await supabase
     .from("groups")
-    .select(`
-      *,
-      tournament:tournaments(*),
-      creator:profiles!groups_created_by_fkey(*)
-    `)
+    .select("id, name, join_code, created_by, tournament_id, created_at, updated_at")
     .eq("id", groupId)
     .single();
 
-  if (groupError || !group) {
-    return null;
+  if (groupError) {
+    return { group: null, error: groupError.message };
   }
 
-  // Get members with profiles and brackets
+  if (!group) {
+    return { group: null, error: "Group not found" };
+  }
+
+  return { group, error: null };
+}
+
+export async function getGroupMembers(
+  groupId: string
+): Promise<{ members: GroupMember[]; error: string | null }> {
+  const supabase = await createClient();
+
+  // Get members separately - simple query without joins for now
   const { data: members, error: membersError } = await supabase
     .from("group_members")
-    .select(`
-      *,
-      profile:profiles(*),
-      bracket:brackets(*)
-    `)
+    .select("id, group_id, user_id, bracket_id, joined_at")
     .eq("group_id", groupId);
 
   if (membersError) {
-    return null;
+    return { members: [], error: membersError.message };
   }
 
-  return {
-    ...group,
-    tournament: group.tournament,
-    creator: group.creator,
-    members: members || [],
-  } as GroupWithDetails;
+  return { members: members || [], error: null };
 }
 
 export async function getUserGroups(): Promise<Group[]> {

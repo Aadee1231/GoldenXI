@@ -1,9 +1,9 @@
-import BracketPage from "@/src/components/bracket/BracketPage";
+import BracketPageV2 from "@/src/components/bracket/BracketPageV2";
 
 export const metadata = {
   title: "Bracket | GoldenXI",
 };
 
 export default function Page() {
-  return <BracketPage />;
+  return <BracketPageV2 />;
 }
