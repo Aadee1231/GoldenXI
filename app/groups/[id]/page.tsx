@@ -4,6 +4,8 @@ import { ArrowLeft, Users, Crown, Trophy, CheckCircle, XCircle, Edit } from "luc
 import Link from "next/link";
 import { createClient } from "@/src/lib/supabase/server";
 import { getGroupById, getGroupMembersWithBrackets, getCurrentUserBracket } from "@/src/lib/supabase/queries/groups";
+import { fetchGroupLeaderboard } from "@/src/lib/supabase/queries/leaderboard";
+import GroupLeaderboard from "@/src/components/groups/GroupLeaderboard";
 import CopyJoinCodeButton from "./CopyJoinCodeButton";
 
 interface GroupDetailPageProps {
@@ -18,10 +20,11 @@ async function GroupDetailContent({ groupId }: { groupId: string }) {
     redirect(`/auth?redirect=/groups/${groupId}`);
   }
 
-  // Fetch group, members with brackets, and current user's bracket
+  // Fetch group, members with brackets, current user's bracket, and group leaderboard
   const { group, error: groupError } = await getGroupById(groupId);
   const { members, error: membersError } = await getGroupMembersWithBrackets(groupId);
   const { bracket: userBracket, error: bracketError } = await getCurrentUserBracket();
+  const { data: leaderboardEntries, error: leaderboardError } = await fetchGroupLeaderboard(groupId);
 
   // Debug: Show error if group fetch failed
   if (groupError || !group) {
@@ -178,13 +181,17 @@ async function GroupDetailContent({ groupId }: { groupId: string }) {
         )}
       </div>
 
-      {/* Group Leaderboard Placeholder */}
+      {/* Group Leaderboard */}
       <div className="rounded-xl border border-white/10 bg-white/5 p-5">
         <h3 className="mb-4 flex items-center gap-2 font-semibold text-white">
           <Trophy className="h-5 w-5 text-yellow-400" />
           Group Leaderboard
         </h3>
-        <p className="text-sm text-zinc-400">Scoring and leaderboard coming in Step 5...</p>
+        {leaderboardError ? (
+          <p className="text-sm text-red-400">Error loading leaderboard: {leaderboardError}</p>
+        ) : (
+          <GroupLeaderboard entries={leaderboardEntries} currentUserId={user.id} />
+        )}
       </div>
     </div>
   );

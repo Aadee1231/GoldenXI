@@ -1,13 +1,13 @@
-import type { LeaderboardEntry } from "@/src/lib/mock-data/leaderboard";
+import type { LeaderboardEntry } from "@/src/types";
 
 type Props = {
   entry: LeaderboardEntry;
-  isMock?: boolean;
 };
 
 const MEDAL: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
 
-function timeAgo(dateStr: string): string {
+function timeAgo(dateStr: string | null): string {
+  if (!dateStr) return "—";
   const diff = Date.now() - new Date(dateStr).getTime();
   const days = Math.floor(diff / 86_400_000);
   if (days === 0) return "today";
@@ -15,7 +15,7 @@ function timeAgo(dateStr: string): string {
   return `${days}d ago`;
 }
 
-export default function LeaderboardRow({ entry, isMock = false }: Props) {
+export default function LeaderboardRow({ entry }: Props) {
   const initial = entry.username.slice(0, 1).toUpperCase();
   const isTop3 = entry.rank <= 3;
 
@@ -26,7 +26,6 @@ export default function LeaderboardRow({ entry, isMock = false }: Props) {
         isTop3
           ? "border-yellow-400/30 bg-yellow-400/5 hover:bg-yellow-400/10"
           : "border-white/8 bg-white/[0.03] hover:border-white/15 hover:bg-white/[0.06]",
-        isMock ? "opacity-70" : "",
       ].join(" ")}
     >
       {/* Rank */}
@@ -90,7 +89,7 @@ export default function LeaderboardRow({ entry, isMock = false }: Props) {
             isTop3 ? "text-yellow-400" : "text-white",
           ].join(" ")}
         >
-          {entry.points_earned}
+          {entry.total_score}
         </p>
         <p className="text-[10px] uppercase tracking-wider text-zinc-600">
           pts
@@ -99,7 +98,7 @@ export default function LeaderboardRow({ entry, isMock = false }: Props) {
 
       {/* Date — hidden on small */}
       <div className="hidden w-16 shrink-0 text-right lg:block">
-        <p className="text-xs text-zinc-600">{timeAgo(entry.created_at)}</p>
+        <p className="text-xs text-zinc-600">{timeAgo(entry.submitted_at)}</p>
       </div>
     </div>
   );

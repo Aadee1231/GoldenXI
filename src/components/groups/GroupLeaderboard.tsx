@@ -1,15 +1,13 @@
-"use client";
-
 import { Medal } from "lucide-react";
-import type { GroupMemberWithProfile } from "@/src/types";
+import type { LeaderboardEntry } from "@/src/types";
 
 interface GroupLeaderboardProps {
-  members: GroupMemberWithProfile[];
+  entries: LeaderboardEntry[];
   currentUserId: string;
 }
 
 export default function GroupLeaderboard({ 
-  members, 
+  entries, 
   currentUserId 
 }: GroupLeaderboardProps) {
   const getRankStyle = (index: number) => {
@@ -44,20 +42,19 @@ export default function GroupLeaderboard({
 
   return (
     <div className="rounded-xl border border-white/10 bg-white/5">
-      {members.length === 0 ? (
+      {entries.length === 0 ? (
         <div className="p-8 text-center">
-          <p className="text-zinc-400">No members with brackets yet.</p>
+          <p className="text-zinc-400">No members yet.</p>
         </div>
       ) : (
         <ul className="divide-y divide-white/5">
-          {members.map((member, index) => {
-            const isCurrentUser = member.user_id === currentUserId;
-            const points = member.bracket?.points_earned || 0;
-            const hasBracket = !!member.bracket;
+          {entries.map((entry, index) => {
+            const isCurrentUser = entry.user_id === currentUserId;
+            const hasBracket = !!entry.bracket_id;
 
             return (
               <li
-                key={member.id}
+                key={entry.user_id}
                 className={`flex items-center gap-4 p-4 ${
                   isCurrentUser ? "bg-yellow-400/5" : ""
                 }`}
@@ -70,7 +67,7 @@ export default function GroupLeaderboard({
                 {/* User */}
                 <div className="flex-1">
                   <p className="font-medium text-white">
-                    {member.profile.username}
+                    {entry.username}
                     {isCurrentUser && (
                       <span className="ml-2 text-xs text-zinc-500">(you)</span>
                     )}
@@ -78,16 +75,23 @@ export default function GroupLeaderboard({
                   {!hasBracket && (
                     <p className="text-xs text-zinc-500">No bracket submitted</p>
                   )}
+                  {hasBracket && entry.champion_name && (
+                    <p className="text-xs text-zinc-500">
+                      {entry.champion_flag} {entry.champion_name}
+                    </p>
+                  )}
                 </div>
 
                 {/* Points */}
                 <div className="text-right">
                   <p className={`text-lg font-bold ${
-                    points > 0 ? "text-yellow-400" : "text-zinc-500"
+                    entry.total_score > 0 ? "text-yellow-400" : "text-zinc-500"
                   }`}>
-                    {points}
+                    {entry.total_score}
                   </p>
-                  <p className="text-xs text-zinc-500">points</p>
+                  <p className="text-xs text-zinc-500">
+                    {entry.correct_picks} correct
+                  </p>
                 </div>
               </li>
             );

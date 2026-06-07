@@ -52,6 +52,7 @@ export type Bracket = {
   points_earned: number;
   is_locked: boolean;
   status: "draft" | "submitted" | "scored";
+  submitted_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -94,4 +95,19 @@ export type GroupWithDetails = Group & {
   tournament: Tournament;
   members: GroupMemberWithProfile[];
   creator: Profile;
+};
+
+export type LeaderboardEntry = {
+  rank: number;
+  bracket_id: string;
+  bracket_name: string;
+  user_id: string;
+  username: string;
+  avatar_url: string | null;
+  total_score: number;
+  correct_picks: number;
+  champion_name: string | null;
+  champion_flag: string | null;
+  champion_code: string | null;
+  submitted_at: string | null;
 };

@@ -179,3 +179,50 @@ export function getRoundPointsLabel(round: MatchRound): string {
   if (points === 1) return "1 point";
   return `${points} points`;
 }
+
+/**
+ * Calculate total score and correct picks for a bracket (read-only, no DB updates)
+ * Used for leaderboard display
+ */
+export function calculateBracketScore(
+  picks: Array<{ picked_team_id: string | null; match_id: string }>,
+  matches: Array<{ id: string; round: MatchRound; completed: boolean; winner_id: string | null }>
+): {
+  totalScore: number;
+  correctPicks: number;
+  possibleScore: number;
+  maxScore: number;
+} {
+  const matchMap = new Map(matches.map(m => [m.id, m]));
+  
+  let totalScore = 0;
+  let correctPicks = 0;
+  let possibleScore = 0;
+
+  for (const pick of picks) {
+    const match = matchMap.get(pick.match_id);
+    if (!match) continue;
+
+    // Calculate possible score from completed matches
+    if (match.completed && match.winner_id) {
+      const roundPoints = ROUND_POINTS[match.round];
+      possibleScore += roundPoints;
+
+      // Check if pick is correct
+      if (pick.picked_team_id === match.winner_id) {
+        totalScore += roundPoints;
+        correctPicks++;
+      }
+    }
+  }
+
+  // Max possible score: 8 R16 + 4 QF + 2 SF + 1 Final = 8*1 + 4*2 + 2*4 + 1*8 = 32
+  const maxScore = 32;
+
+  return {
+    totalScore,
+    correctPicks,
+    possibleScore,
+    maxScore,
+  };
+}

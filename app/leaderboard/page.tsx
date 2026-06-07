@@ -1,6 +1,5 @@
 import { Trophy, Flame } from "lucide-react";
 import { fetchLeaderboard } from "@/src/lib/supabase/queries/leaderboard";
-import { MOCK_LEADERBOARD } from "@/src/lib/mock-data/leaderboard";
 import LeaderboardRow from "@/src/components/leaderboard/LeaderboardRow";
 import LeaderboardEmpty from "@/src/components/leaderboard/LeaderboardEmpty";
 
@@ -9,12 +8,7 @@ export const metadata = {
 };
 
 export default async function LeaderboardPage() {
-  const { data: realData, error } = await fetchLeaderboard(50);
-
-  const useMock = realData.length === 0;
-  const entries = useMock ? MOCK_LEADERBOARD : realData;
-
-  const topEntry = entries[0] ?? null;
+  const { data: entries, error } = await fetchLeaderboard(50);
 
   return (
     <div className="min-h-screen px-4 py-24">
@@ -33,14 +27,9 @@ export default async function LeaderboardPage() {
             Rankings update as tournament results come in. Points are awarded
             for correct picks in each round.
           </p>
-          {useMock && (
-            <p className="mt-3 inline-block rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-zinc-500">
-              Showing preview data — submit your bracket to appear here
-            </p>
-          )}
           {error && (
             <p className="mt-2 text-xs text-red-400/70">
-              Could not reach database — showing preview data
+              Error loading leaderboard: {error}
             </p>
           )}
         </div>
@@ -75,7 +64,7 @@ export default async function LeaderboardPage() {
                       i === 1 ? "text-yellow-400" : "text-zinc-300",
                     ].join(" ")}
                   >
-                    {entry.points_earned} pts
+                    {entry.total_score} pts
                   </p>
                 </div>
               );
@@ -104,7 +93,6 @@ export default async function LeaderboardPage() {
               <LeaderboardRow
                 key={entry.bracket_id}
                 entry={entry}
-                isMock={useMock}
               />
             ))}
           </div>
