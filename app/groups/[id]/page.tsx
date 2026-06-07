@@ -1,9 +1,9 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { ArrowLeft, Users, Crown, Trophy } from "lucide-react";
+import { ArrowLeft, Users, Crown, Trophy, CheckCircle, XCircle, Edit } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/src/lib/supabase/server";
-import { getGroupById, getGroupMembers } from "@/src/lib/supabase/queries/groups";
+import { getGroupById, getGroupMembersWithBrackets, getCurrentUserBracket } from "@/src/lib/supabase/queries/groups";
 import CopyJoinCodeButton from "./CopyJoinCodeButton";
 
 interface GroupDetailPageProps {
@@ -18,9 +18,10 @@ async function GroupDetailContent({ groupId }: { groupId: string }) {
     redirect(`/auth?redirect=/groups/${groupId}`);
   }
 
-  // Fetch group and members separately
+  // Fetch group, members with brackets, and current user's bracket
   const { group, error: groupError } = await getGroupById(groupId);
-  const { members, error: membersError } = await getGroupMembers(groupId);
+  const { members, error: membersError } = await getGroupMembersWithBrackets(groupId);
+  const { bracket: userBracket, error: bracketError } = await getCurrentUserBracket();
 
   // Debug: Show error if group fetch failed
   if (groupError || !group) {
@@ -86,25 +87,94 @@ async function GroupDetailContent({ groupId }: { groupId: string }) {
         </div>
       </div>
 
-      {/* Member Count & Simple Member List */}
+      {/* Current User's Bracket Status */}
+      <div className="rounded-xl border border-white/10 bg-white/5 p-5">
+        <h3 className="mb-4 flex items-center gap-2 font-semibold text-white">
+          <Trophy className="h-5 w-5 text-yellow-400" />
+          Your Bracket
+        </h3>
+        {userBracket ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-400" />
+              <span className="text-sm text-zinc-300">
+                Bracket {userBracket.status === "submitted" ? "submitted" : "saved as draft"}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href="/bracket"
+                className="inline-flex items-center gap-2 rounded-lg bg-yellow-400 px-4 py-2 text-sm font-medium text-black hover:bg-yellow-500"
+              >
+                <Edit className="h-4 w-4" />
+                {userBracket.status === "submitted" ? "View Bracket" : "Edit Bracket"}
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <XCircle className="h-5 w-5 text-zinc-500" />
+              <span className="text-sm text-zinc-400">
+                You haven't submitted your bracket yet
+              </span>
+            </div>
+            <Link
+              href="/bracket"
+              className="inline-flex items-center gap-2 rounded-lg bg-yellow-400 px-4 py-2 text-sm font-medium text-black hover:bg-yellow-500"
+            >
+              <Trophy className="h-4 w-4" />
+              Create Bracket
+            </Link>
+          </div>
+        )}
+      </div>
+
+      {/* Member Brackets */}
       <div className="rounded-xl border border-white/10 bg-white/5 p-5">
         <h3 className="mb-4 flex items-center gap-2 font-semibold text-white">
           <Users className="h-5 w-5 text-yellow-400" />
-          Members ({members.length})
+          Member Brackets ({members.length})
         </h3>
         {members.length === 0 ? (
           <p className="text-sm text-zinc-400">No members found.</p>
         ) : (
-          <ul className="space-y-2">
+          <div className="space-y-2">
             {members.map((member) => (
-              <li key={member.id} className="flex items-center justify-between rounded-lg bg-black/30 px-3 py-2">
-                <span className="text-sm text-zinc-300">User: {member.user_id.slice(0, 8)}...</span>
-                {member.user_id === group.created_by && (
-                  <span className="text-xs text-yellow-400">Creator</span>
-                )}
-              </li>
+              <div key={member.id} className="flex items-center justify-between rounded-lg bg-black/30 px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-white">
+                        {member.profile?.username || `User ${member.user_id.slice(0, 8)}`}
+                      </span>
+                      {member.user_id === group.created_by && (
+                        <span className="flex items-center gap-1 rounded-full bg-yellow-400/20 px-2 py-0.5 text-xs font-medium text-yellow-400">
+                          <Crown className="h-3 w-3" />
+                          Creator
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {member.bracket ? (
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-400" />
+                      <span className="text-xs text-green-400">
+                        {member.bracket.status === "submitted" ? "Submitted" : "Draft"}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <XCircle className="h-4 w-4 text-zinc-500" />
+                      <span className="text-xs text-zinc-500">No bracket</span>
+                    </div>
+                  )}
+                </div>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
       </div>
 
@@ -114,25 +184,7 @@ async function GroupDetailContent({ groupId }: { groupId: string }) {
           <Trophy className="h-5 w-5 text-yellow-400" />
           Group Leaderboard
         </h3>
-        <p className="text-sm text-zinc-400">Leaderboard coming soon...</p>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex flex-wrap gap-3">
-        <Link
-          href="/bracket"
-          className="inline-flex items-center gap-2 rounded-lg bg-yellow-400 px-4 py-2 text-sm font-medium text-black hover:bg-yellow-500"
-        >
-          <Trophy className="h-4 w-4" />
-          View Bracket
-        </Link>
-        <Link
-          href="/groups"
-          className="inline-flex items-center gap-2 rounded-lg border border-white/20 px-4 py-2 text-sm font-medium text-white hover:bg-white/5"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Groups
-        </Link>
+        <p className="text-sm text-zinc-400">Scoring and leaderboard coming in Step 5...</p>
       </div>
     </div>
   );

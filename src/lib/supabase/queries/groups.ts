@@ -3,6 +3,15 @@
 import { createClient } from "../server";
 import type { Group, GroupMember, GroupWithDetails, Profile, Bracket } from "@/src/types";
 
+export type GroupMemberWithBracket = {
+  id: string;
+  group_id: string;
+  user_id: string;
+  joined_at: string;
+  profile: Profile | null;
+  bracket: Bracket | null;
+};
+
 // Generate a short random join code (6 characters, alphanumeric)
 function generateJoinCode(): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -11,6 +20,30 @@ function generateJoinCode(): string {
     code += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return code;
+}
+
+/**
+ * Get the active tournament ID
+ */
+async function getActiveTournamentId(): Promise<{ id: string | null; error: string | null }> {
+  const supabase = await createClient();
+
+  const { data: tournaments, error } = await supabase
+    .from("tournaments")
+    .select("id")
+    .eq("is_active", true)
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  if (error) {
+    return { id: null, error: error.message };
+  }
+
+  if (!tournaments || tournaments.length === 0) {
+    return { id: null, error: "No active tournament found" };
+  }
+
+  return { id: tournaments[0].id, error: null };
 }
 
 export async function createGroup(
@@ -106,13 +139,20 @@ export async function joinGroup(
   const normalizedCode = joinCode.trim().toUpperCase();
 
   // Find group by join code
+  // Note: This query needs to work even if user is not a member yet
+  // The RLS policy should allow reading groups by join_code for joining
   const { data: group, error: groupError } = await supabase
     .from("groups")
     .select("id")
     .eq("join_code", normalizedCode)
     .single();
 
-  if (groupError || !group) {
+  if (groupError) {
+    console.error("Error finding group by join code:", groupError);
+    return { success: false, error: "Invalid join code or unable to access group" };
+  }
+
+  if (!group) {
     return { success: false, error: "Invalid join code" };
   }
 
@@ -134,7 +174,6 @@ export async function joinGroup(
     .insert({
       group_id: group.id,
       user_id: user.id,
-      bracket_id: null,
     });
 
   if (memberError) {
@@ -183,6 +222,119 @@ export async function getGroupMembers(
   }
 
   return { members: members || [], error: null };
+}
+
+/**
+ * Get group members with their profiles and bracket status for the active tournament
+ */
+export async function getGroupMembersWithBrackets(
+  groupId: string
+): Promise<{ members: GroupMemberWithBracket[]; error: string | null }> {
+  const supabase = await createClient();
+
+  // Get active tournament
+  const { id: tournamentId, error: tournamentError } = await getActiveTournamentId();
+  if (tournamentError || !tournamentId) {
+    return { members: [], error: tournamentError || "No active tournament found" };
+  }
+
+  // Get members
+  const { data: members, error: membersError } = await supabase
+    .from("group_members")
+    .select("id, group_id, user_id, joined_at")
+    .eq("group_id", groupId);
+
+  if (membersError) {
+    return { members: [], error: membersError.message };
+  }
+
+  if (!members || members.length === 0) {
+    return { members: [], error: null };
+  }
+
+  // Get user IDs
+  const userIds = members.map((m) => m.user_id);
+
+  // Fetch profiles for all members
+  const { data: profiles, error: profilesError } = await supabase
+    .from("profiles")
+    .select("id, username, avatar_url, points, created_at, updated_at")
+    .in("id", userIds);
+
+  if (profilesError) {
+    console.error("Error fetching profiles:", profilesError);
+  }
+
+  // Fetch brackets for all members for the active tournament
+  const { data: brackets, error: bracketsError } = await supabase
+    .from("brackets")
+    .select("id, user_id, tournament_id, name, points_earned, is_locked, status, created_at, updated_at")
+    .in("user_id", userIds)
+    .eq("tournament_id", tournamentId);
+
+  if (bracketsError) {
+    console.error("Error fetching brackets:", bracketsError);
+  }
+
+  // Create maps for quick lookup
+  const profilesMap = new Map<string, Profile>();
+  (profiles || []).forEach((p) => {
+    profilesMap.set(p.id, p as Profile);
+  });
+
+  const bracketsMap = new Map<string, Bracket>();
+  (brackets || []).forEach((b) => {
+    bracketsMap.set(b.user_id, b as Bracket);
+  });
+
+  // Combine data
+  const membersWithBrackets: GroupMemberWithBracket[] = members.map((member) => ({
+    id: member.id,
+    group_id: member.group_id,
+    user_id: member.user_id,
+    joined_at: member.joined_at,
+    profile: profilesMap.get(member.user_id) || null,
+    bracket: bracketsMap.get(member.user_id) || null,
+  }));
+
+  return { members: membersWithBrackets, error: null };
+}
+
+/**
+ * Get the current user's bracket for the active tournament
+ */
+export async function getCurrentUserBracket(): Promise<{
+  bracket: Bracket | null;
+  error: string | null;
+}> {
+  const supabase = await createClient();
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { bracket: null, error: "You must be logged in" };
+  }
+
+  const { id: tournamentId, error: tournamentError } = await getActiveTournamentId();
+  if (tournamentError || !tournamentId) {
+    return { bracket: null, error: tournamentError || "No active tournament found" };
+  }
+
+  const { data: brackets, error: bracketError } = await supabase
+    .from("brackets")
+    .select("*")
+    .eq("user_id", user.id)
+    .eq("tournament_id", tournamentId)
+    .order("created_at", { ascending: false });
+
+  if (bracketError) {
+    return { bracket: null, error: bracketError.message };
+  }
+
+  if (!brackets || brackets.length === 0) {
+    return { bracket: null, error: null };
+  }
+
+  return { bracket: brackets[0] as Bracket, error: null };
 }
 
 export async function getUserGroups(): Promise<Group[]> {
