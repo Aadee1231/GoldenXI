@@ -188,10 +188,10 @@ export async function getGroupById(
 ): Promise<{ group: Group | null; error: string | null }> {
   const supabase = await createClient();
 
-  // Get group with only basic fields - no complex joins
+  // Get group with all fields
   const { data: group, error: groupError } = await supabase
     .from("groups")
-    .select("id, name, join_code, created_by, tournament_id, created_at, updated_at")
+    .select("*")
     .eq("id", groupId)
     .single();
 
