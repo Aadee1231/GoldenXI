@@ -258,7 +258,7 @@ export async function getGroupMembersWithBrackets(
   // Fetch profiles for all members
   const { data: profiles, error: profilesError } = await supabase
     .from("profiles")
-    .select("id, username, avatar_url, points, created_at, updated_at")
+    .select("id, username, display_name, avatar_url, points, created_at, updated_at")
     .in("id", userIds);
 
   if (profilesError) {

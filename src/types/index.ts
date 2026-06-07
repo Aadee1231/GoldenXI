@@ -1,6 +1,7 @@
 export type Profile = {
   id: string;
-  username: string;
+  username: string | null;
+  display_name: string | null;
   avatar_url: string | null;
   points: number;
   created_at: string;
@@ -102,7 +103,8 @@ export type LeaderboardEntry = {
   bracket_id: string;
   bracket_name: string;
   user_id: string;
-  username: string;
+  username: string | null;
+  display_name: string | null;
   avatar_url: string | null;
   total_score: number;
   correct_picks: number;

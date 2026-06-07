@@ -16,7 +16,8 @@ function timeAgo(dateStr: string | null): string {
 }
 
 export default function LeaderboardRow({ entry }: Props) {
-  const initial = entry.username.slice(0, 1).toUpperCase();
+  const displayName = entry.display_name || entry.username || "Unknown Player";
+  const initial = displayName.slice(0, 1).toUpperCase();
   const isTop3 = entry.rank <= 3;
 
   return (
@@ -51,7 +52,7 @@ export default function LeaderboardRow({ entry }: Props) {
         {entry.avatar_url ? (
           <img
             src={entry.avatar_url}
-            alt={entry.username}
+            alt={displayName}
             className="h-full w-full rounded-full object-cover"
           />
         ) : (
@@ -62,7 +63,7 @@ export default function LeaderboardRow({ entry }: Props) {
       {/* Name + bracket */}
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold text-white">
-          {entry.username}
+          {displayName}
         </p>
         <p className="truncate text-xs text-zinc-500">{entry.bracket_name}</p>
       </div>

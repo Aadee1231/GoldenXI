@@ -86,7 +86,8 @@ export async function fetchLeaderboard(
     const entries: LeaderboardEntry[] = leaderboardData.map((row: {
       bracket_id: string;
       user_id: string;
-      username: string;
+      username: string | null;
+      display_name: string | null;
       avatar_url: string | null;
       bracket_name: string;
       submitted_at: string | null;
@@ -106,7 +107,8 @@ export async function fetchLeaderboard(
         bracket_id: row.bracket_id,
         bracket_name: row.bracket_name,
         user_id: row.user_id,
-        username: row.username || "Anonymous",
+        username: row.username,
+        display_name: row.display_name,
         avatar_url: row.avatar_url,
         total_score: totalScore,
         correct_picks: correctPicks,
@@ -205,7 +207,8 @@ export async function fetchGroupLeaderboard(
     // Calculate scores for each member
     const entries: LeaderboardEntry[] = leaderboardData.map((row: {
       user_id: string;
-      username: string;
+      username: string | null;
+      display_name: string | null;
       avatar_url: string | null;
       bracket_id: string | null;
       bracket_name: string | null;
@@ -222,7 +225,8 @@ export async function fetchGroupLeaderboard(
           bracket_id: "",
           bracket_name: "Not submitted",
           user_id: row.user_id,
-          username: row.username || "Anonymous",
+          username: row.username,
+          display_name: row.display_name,
           avatar_url: row.avatar_url,
           total_score: 0,
           correct_picks: 0,
@@ -245,7 +249,8 @@ export async function fetchGroupLeaderboard(
         bracket_id: row.bracket_id,
         bracket_name: row.bracket_name || "My Bracket",
         user_id: row.user_id,
-        username: row.username || "Anonymous",
+        username: row.username,
+        display_name: row.display_name,
         avatar_url: row.avatar_url,
         total_score: totalScore,
         correct_picks: correctPicks,

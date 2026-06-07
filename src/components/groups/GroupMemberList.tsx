@@ -33,7 +33,7 @@ export default function GroupMemberList({
               {member.profile.avatar_url ? (
                 <Image
                   src={member.profile.avatar_url}
-                  alt={member.profile.username}
+                  alt={member.profile.display_name || member.profile.username || "User"}
                   fill
                   className="object-cover"
                 />
@@ -48,7 +48,7 @@ export default function GroupMemberList({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <span className="truncate font-medium text-white">
-                  {member.profile.username}
+                  {member.profile.display_name || member.profile.username || "Unknown Player"}
                 </span>
                 {isCreator && (
                   <Crown className="h-3 w-3 flex-shrink-0 text-yellow-400" />

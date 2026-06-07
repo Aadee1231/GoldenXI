@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Users, Plus, LogIn, Trophy } from "lucide-react";
 import { createClient } from "@/src/lib/supabase/server";
 import { getUserGroups } from "@/src/lib/supabase/queries/groups";
+import { needsProfileSetup } from "@/src/lib/supabase/queries/profiles";
 import Link from "next/link";
 import CreateGroupForm from "@/src/components/groups/CreateGroupForm";
 import JoinGroupForm from "@/src/components/groups/JoinGroupForm";
@@ -13,6 +14,11 @@ async function GroupsContent() {
 
   if (!user) {
     redirect("/auth?redirect=/groups");
+  }
+
+  const needsSetup = await needsProfileSetup();
+  if (needsSetup) {
+    redirect("/profile/setup");
   }
 
   const groups = await getUserGroups();

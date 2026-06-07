@@ -2,14 +2,16 @@
 
 import Link from "next/link";
 import type { User } from "@supabase/supabase-js";
+import type { Profile } from "@/src/types";
 import { signOut } from "@/app/auth/actions";
 import { LogOut, User as UserIcon } from "lucide-react";
 
 type Props = {
   user: User | null;
+  profile: Profile | null;
 };
 
-export default function AuthButton({ user }: Props) {
+export default function AuthButton({ user, profile }: Props) {
   if (!user) {
     return (
       <div className="flex items-center gap-3">
@@ -30,21 +32,26 @@ export default function AuthButton({ user }: Props) {
   }
 
   const displayName =
-    user.user_metadata?.username ??
-    user.user_metadata?.full_name ??
-    user.email?.split("@")[0] ??
+    profile?.display_name ||
+    profile?.username ||
+    user.user_metadata?.username ||
+    user.user_metadata?.full_name ||
+    user.email?.split("@")[0] ||
     "Profile";
 
   return (
     <div className="flex items-center gap-3">
-      <div className="hidden items-center gap-2 sm:flex">
+      <Link
+        href="/profile"
+        className="hidden items-center gap-2 transition-opacity hover:opacity-80 sm:flex"
+      >
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-yellow-400/20 ring-1 ring-yellow-400/40">
           <UserIcon className="h-4 w-4 text-yellow-400" />
         </div>
         <span className="max-w-[120px] truncate text-sm font-medium text-zinc-300">
           {displayName}
         </span>
-      </div>
+      </Link>
       <form action={signOut}>
         <button
           type="submit"

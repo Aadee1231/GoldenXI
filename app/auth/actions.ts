@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/src/lib/supabase/server";
+import { ensureProfile } from "@/src/lib/supabase/queries/profiles";
 
 export async function signUp(formData: FormData) {
   const email = formData.get("email") as string;
@@ -27,6 +28,9 @@ export async function signIn(formData: FormData) {
   if (error) {
     return redirect(`/auth?error=${encodeURIComponent(error.message)}&tab=login`);
   }
+
+  // Ensure profile exists for this user
+  await ensureProfile();
 
   return redirect("/");
 }

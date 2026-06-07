@@ -1,4 +1,5 @@
 import { createClient } from "@/src/lib/supabase/server";
+import { getCurrentUserProfile } from "@/src/lib/supabase/queries/profiles";
 import AuthButton from "@/src/components/auth/AuthButton";
 
 export default async function NavbarAuth() {
@@ -7,5 +8,11 @@ export default async function NavbarAuth() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  return <AuthButton user={user} />;
+  let profile = null;
+  if (user) {
+    const result = await getCurrentUserProfile();
+    profile = result.profile;
+  }
+
+  return <AuthButton user={user} profile={profile} />;
 }

@@ -67,7 +67,7 @@ export default function GroupLeaderboard({
                 {/* User */}
                 <div className="flex-1">
                   <p className="font-medium text-white">
-                    {entry.username}
+                    {entry.display_name || entry.username || "Unknown Player"}
                     {isCurrentUser && (
                       <span className="ml-2 text-xs text-zinc-500">(you)</span>
                     )}
