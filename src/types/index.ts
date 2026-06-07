@@ -4,6 +4,7 @@ export type Profile = {
   display_name: string | null;
   avatar_url: string | null;
   points: number;
+  public_bracket: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -130,4 +131,34 @@ export type GroupSettings = {
   lock_at: string | null;
   allow_late_join: boolean;
   description: string | null;
+};
+
+export type InvitePreview = {
+  group_id: string;
+  group_name: string;
+  tournament_id: string;
+  tournament_name: string;
+  member_count: number;
+  invite_policy: "admin_only" | "members";
+  allow_late_join: boolean;
+  lock_at: string | null;
+  is_locked: boolean;
+};
+
+export type PublicBracketData = {
+  bracket_id: string;
+  bracket_name: string;
+  user_id: string;
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  points_earned: number;
+  is_locked: boolean;
+  status: "draft" | "submitted" | "scored";
+  submitted_at: string | null;
+  champion_name: string | null;
+  champion_code: string | null;
+  champion_flag: string | null;
+  total_picks: number;
+  public_bracket: boolean;
 };

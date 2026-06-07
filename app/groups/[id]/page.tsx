@@ -6,6 +6,7 @@ import { createClient } from "@/src/lib/supabase/server";
 import { getGroupById, getGroupMembersWithBrackets, getCurrentUserBracket } from "@/src/lib/supabase/queries/groups";
 import { fetchGroupLeaderboard } from "@/src/lib/supabase/queries/leaderboard";
 import GroupLeaderboard from "@/src/components/groups/GroupLeaderboard";
+import GroupInviteCard from "@/src/components/groups/GroupInviteCard";
 import CopyJoinCodeButton from "./CopyJoinCodeButton";
 
 interface GroupDetailPageProps {
@@ -143,6 +144,14 @@ async function GroupDetailContent({ groupId }: { groupId: string }) {
           </div>
         )}
       </div>
+
+      {/* Group Invite Card */}
+      <GroupInviteCard
+        groupName={group.name}
+        joinCode={group.join_code}
+        invitePolicy={group.invite_policy}
+        isCreator={isCreator}
+      />
 
       {/* Member Brackets */}
       <div className="rounded-xl border border-white/10 bg-white/5 p-5">

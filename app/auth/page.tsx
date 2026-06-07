@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/src/lib/supabase/server";
 import AuthForm from "@/src/components/auth/AuthForm";
 
-type SearchParams = Promise<{ tab?: string; error?: string; message?: string }>;
+type SearchParams = Promise<{ tab?: string; error?: string; message?: string; redirect?: string }>;
 
 export default async function AuthPage({
   searchParams,
@@ -14,11 +14,13 @@ export default async function AuthPage({
     data: { user },
   } = await supabase.auth.getUser();
 
+  const params = await searchParams;
+  const redirectTo = params.redirect ?? null;
+
   if (user) {
-    redirect("/");
+    redirect(redirectTo || "/");
   }
 
-  const params = await searchParams;
   const tab = params.tab ?? "login";
   const error = params.error ?? null;
   const message = params.message ?? null;
@@ -35,7 +37,7 @@ export default async function AuthPage({
             Sign in or create an account to build your bracket
           </p>
         </div>
-        <AuthForm defaultTab={tab} error={error} message={message} />
+        <AuthForm defaultTab={tab} error={error} message={message} redirect={redirectTo} />
       </div>
     </div>
   );

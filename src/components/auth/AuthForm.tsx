@@ -8,9 +8,10 @@ type Props = {
   defaultTab: string;
   error: string | null;
   message: string | null;
+  redirect?: string | null;
 };
 
-export default function AuthForm({ defaultTab, error, message }: Props) {
+export default function AuthForm({ defaultTab, error, message, redirect }: Props) {
   const [tab, setTab] = useState<"login" | "signup">(
     defaultTab === "signup" ? "signup" : "login"
   );
@@ -65,6 +66,7 @@ export default function AuthForm({ defaultTab, error, message }: Props) {
       {/* Login Form */}
       {tab === "login" && (
         <form onSubmit={(e) => handleSubmit(signIn, e)} className="space-y-5">
+          {redirect && <input type="hidden" name="redirect" value={redirect} />}
           <div>
             <label
               htmlFor="login-email"
@@ -130,6 +132,7 @@ export default function AuthForm({ defaultTab, error, message }: Props) {
       {/* Sign Up Form */}
       {tab === "signup" && (
         <form onSubmit={(e) => handleSubmit(signUp, e)} className="space-y-5">
+          {redirect && <input type="hidden" name="redirect" value={redirect} />}
           <div>
             <label
               htmlFor="signup-email"
