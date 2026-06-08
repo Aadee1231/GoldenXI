@@ -4,7 +4,10 @@ import { useState, useEffect } from "react";
 import { getTeamsByGroup } from "@/src/lib/supabase/queries/group-picks-client";
 import { getKnockoutMatches } from "@/src/lib/supabase/queries/brackets-client";
 import { createClient } from "@/src/lib/supabase/client";
-import type { Team, GroupRankingInput, Match } from "@/src/types";
+import TeamFlag from "@/src/components/ui/TeamFlag";
+import type { GroupRankingInput, Match } from "@/src/types";
+import { buildOfficialRoundOf32 } from "@/src/lib/world-cup-2026";
+import type { QualifiedTeam } from "@/src/lib/world-cup-2026";
 
 type KnockoutBracketStepProps = {
   groupRankings: GroupRankingInput[];
@@ -13,16 +16,21 @@ type KnockoutBracketStepProps = {
   onChange: (picks: Record<string, string | null>) => void;
   onRegisterSave: (callback: () => Promise<void>) => void;
   onRegisterAutoPick: (callback: () => void) => void;
+  onRoundChange?: (round: "r32" | "r16" | "qf" | "sf" | "final", canAdvance: boolean) => void;
 };
-
-type QualifiedTeam = Team & { seed: string };
 
 type MatchDisplay = {
   id: string;
   round: string;
+  matchNumber?: number;
   homeTeam: QualifiedTeam | null;
   awayTeam: QualifiedTeam | null;
   winnerId: string | null;
+  date?: string;
+  displayDate?: string;
+  stadium?: string;
+  city?: string;
+  templateDebug?: string;
 };
 
 export default function KnockoutBracketStep({
@@ -32,6 +40,7 @@ export default function KnockoutBracketStep({
   onChange,
   onRegisterSave,
   onRegisterAutoPick,
+  onRoundChange,
 }: KnockoutBracketStepProps) {
   const [qualifiedTeams, setQualifiedTeams] = useState<QualifiedTeam[]>([]);
   const [matches, setMatches] = useState<MatchDisplay[]>([]);
@@ -51,6 +60,15 @@ export default function KnockoutBracketStep({
   useEffect(() => {
     rebuildMatches();
   }, [picks, qualifiedTeams]);
+
+  useEffect(() => {
+    if (!onRoundChange) return;
+    
+    const currentRoundMatches = matches.filter((m) => m.round === currentRound);
+    const isCurrentRoundComplete = currentRoundMatches.length > 0 && currentRoundMatches.every((m) => picks[m.id]);
+    
+    onRoundChange(currentRound, isCurrentRoundComplete);
+  }, [currentRound, picks, matches, onRoundChange]);
 
   const loadData = async () => {
     setLoading(true);
@@ -103,112 +121,89 @@ export default function KnockoutBracketStep({
     const { data: knockoutMatches } = await getKnockoutMatches(tournamentId);
 
     if (teamsData && knockoutMatches) {
-      const qualified: QualifiedTeam[] = [];
+      try {
+        const { matches: r32Matches, qualifiedTeams: qualified, annexCMode, annexCKey } = buildOfficialRoundOf32(
+          groupRankings,
+          teamsData,
+          thirdPlacePicks
+        );
 
-      const firstPlaceTeams = groupRankings
-        .filter((r) => r.position === 1)
-        .map((r) => {
-          const groupTeams = teamsData[r.group_label] || [];
-          const team = groupTeams.find((t) => t.id === r.team_id);
-          return team ? { ...team, seed: `${r.group_label}1` } : null;
-        })
-        .filter((t): t is QualifiedTeam => t !== null);
+        if (process.env.NODE_ENV === "development") {
+          console.log("[GoldenXI] Annex C Key:", annexCKey);
+          console.log("[GoldenXI] Annex C Mode:", annexCMode);
+        }
 
-      const secondPlaceTeams = groupRankings
-        .filter((r) => r.position === 2)
-        .map((r) => {
-          const groupTeams = teamsData[r.group_label] || [];
-          const team = groupTeams.find((t) => t.id === r.team_id);
-          return team ? { ...team, seed: `${r.group_label}2` } : null;
-        })
-        .filter((t): t is QualifiedTeam => t !== null);
+        setQualifiedTeams(qualified);
 
-      const thirdPlaceTeamsData: QualifiedTeam[] = [];
-      thirdPlacePicks.forEach((teamId) => {
-        Object.values(teamsData).forEach((groupTeams) => {
-          const team = groupTeams.find((t) => t.id === teamId);
-          if (team) {
-            thirdPlaceTeamsData.push({ ...team, seed: `${team.group_label}3` });
-          }
+        const r32DbMatches = knockoutMatches.filter((m) => m.round === "r32");
+        const r16Matches = knockoutMatches.filter((m) => m.round === "r16");
+        const qfMatches = knockoutMatches.filter((m) => m.round === "qf");
+        const sfMatches = knockoutMatches.filter((m) => m.round === "sf");
+        const finalMatches = knockoutMatches.filter((m) => m.round === "final");
+
+        const r32Display: MatchDisplay[] = r32Matches.map((templateMatch, index) => {
+          const dbMatch = r32DbMatches[index];
+          return {
+            id: dbMatch?.id || `r32-${index}`,
+            round: "r32",
+            matchNumber: templateMatch.matchNumber,
+            homeTeam: templateMatch.homeTeam,
+            awayTeam: templateMatch.awayTeam,
+            winnerId: dbMatch ? picks[dbMatch.id] || null : null,
+            date: templateMatch.date,
+            displayDate: templateMatch.displayDate,
+            stadium: templateMatch.stadium,
+            city: templateMatch.city,
+            templateDebug: templateMatch.templateDebug,
+          };
         });
-      });
 
-      qualified.push(...firstPlaceTeams, ...secondPlaceTeams, ...thirdPlaceTeamsData);
-      setQualifiedTeams(qualified);
+        const buildNextRound = (
+          prevRoundMatches: MatchDisplay[],
+          nextRoundDbMatches: Match[],
+          round: string
+        ): MatchDisplay[] => {
+          const nextRoundDisplays: MatchDisplay[] = [];
+          const numMatches = nextRoundDbMatches.length;
 
-      const r32Matches = knockoutMatches.filter((m) => m.round === "r32");
-      const r16Matches = knockoutMatches.filter((m) => m.round === "r16");
-      const qfMatches = knockoutMatches.filter((m) => m.round === "qf");
-      const sfMatches = knockoutMatches.filter((m) => m.round === "sf");
-      const finalMatches = knockoutMatches.filter((m) => m.round === "final");
+          for (let i = 0; i < numMatches; i++) {
+            const match1 = prevRoundMatches[i * 2];
+            const match2 = prevRoundMatches[i * 2 + 1];
 
-      const seedR32Bracket = (teams: QualifiedTeam[]): MatchDisplay[] => {
-        const matchDisplays: MatchDisplay[] = [];
-        
-        for (let i = 0; i < 16; i++) {
-          const homeTeam = teams[i * 2] || null;
-          const awayTeam = teams[i * 2 + 1] || null;
-          const match = r32Matches[i];
+            const homeTeam =
+              match1 && match1.winnerId
+                ? qualified.find((t) => t.id === match1.winnerId) || null
+                : null;
+            const awayTeam =
+              match2 && match2.winnerId
+                ? qualified.find((t) => t.id === match2.winnerId) || null
+                : null;
 
-          if (match) {
-            matchDisplays.push({
-              id: match.id,
-              round: "r32",
-              homeTeam,
-              awayTeam,
-              winnerId: picks[match.id] || null,
-            });
+            const dbMatch = nextRoundDbMatches[i];
+
+            if (dbMatch) {
+              nextRoundDisplays.push({
+                id: dbMatch.id,
+                round,
+                homeTeam,
+                awayTeam,
+                winnerId: picks[dbMatch.id] || null,
+              });
+            }
           }
-        }
 
-        return matchDisplays;
-      };
+          return nextRoundDisplays;
+        };
 
-      const r32Display = seedR32Bracket(qualified);
+        const r16Display = buildNextRound(r32Display, r16Matches, "r16");
+        const qfDisplay = buildNextRound(r16Display, qfMatches, "qf");
+        const sfDisplay = buildNextRound(qfDisplay, sfMatches, "sf");
+        const finalDisplay = buildNextRound(sfDisplay, finalMatches, "final");
 
-      const buildNextRound = (
-        prevRoundMatches: MatchDisplay[],
-        nextRoundDbMatches: Match[],
-        round: string
-      ): MatchDisplay[] => {
-        const nextRoundDisplays: MatchDisplay[] = [];
-        const numMatches = nextRoundDbMatches.length;
-
-        for (let i = 0; i < numMatches; i++) {
-          const match1 = prevRoundMatches[i * 2];
-          const match2 = prevRoundMatches[i * 2 + 1];
-
-          const homeTeam =
-            match1 && match1.winnerId
-              ? qualified.find((t) => t.id === match1.winnerId) || null
-              : null;
-          const awayTeam =
-            match2 && match2.winnerId
-              ? qualified.find((t) => t.id === match2.winnerId) || null
-              : null;
-
-          const dbMatch = nextRoundDbMatches[i];
-
-          if (dbMatch) {
-            nextRoundDisplays.push({
-              id: dbMatch.id,
-              round,
-              homeTeam,
-              awayTeam,
-              winnerId: picks[dbMatch.id] || null,
-            });
-          }
-        }
-
-        return nextRoundDisplays;
-      };
-
-      const r16Display = buildNextRound(r32Display, r16Matches, "r16");
-      const qfDisplay = buildNextRound(r16Display, qfMatches, "qf");
-      const sfDisplay = buildNextRound(qfDisplay, sfMatches, "sf");
-      const finalDisplay = buildNextRound(sfDisplay, finalMatches, "final");
-
-      setMatches([...r32Display, ...r16Display, ...qfDisplay, ...sfDisplay, ...finalDisplay]);
+        setMatches([...r32Display, ...r16Display, ...qfDisplay, ...sfDisplay, ...finalDisplay]);
+      } catch (error) {
+        console.error("Error building official bracket:", error);
+      }
     }
 
     setLoading(false);
@@ -285,7 +280,9 @@ export default function KnockoutBracketStep({
   const handleAutoPick = () => {
     const newPicks = { ...picks };
     
-    matches.forEach((match) => {
+    const currentRoundMatches = matches.filter((m) => m.round === currentRound);
+    
+    currentRoundMatches.forEach((match) => {
       if (match.homeTeam && match.awayTeam) {
         const randomWinner = Math.random() < 0.5 ? match.homeTeam.id : match.awayTeam.id;
         newPicks[match.id] = randomWinner;
@@ -372,15 +369,28 @@ export default function KnockoutBracketStep({
         </div>
       </div>
 
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {currentRoundData?.matches.map((match, index) => (
           <div
             key={match.id}
-            className="bg-gray-800 rounded-lg border border-gray-700 p-4"
+            className="bg-gray-800 rounded-lg border border-gray-700 p-4 relative"
           >
-            <div className="text-xs text-gray-500 mb-2">
-              Match {index + 1} of {currentRoundData.matches.length}
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-xs text-gray-400">
+                {match.matchNumber ? `Match ${match.matchNumber}` : `Match ${index + 1}`}
+              </div>
+              {match.stadium && match.city && (
+                <div className="text-xs text-gray-500">
+                  {match.stadium} · {match.city}
+                </div>
+              )}
             </div>
+
+            {match.displayDate && (
+              <div className="text-xs text-gray-400 mb-2">
+                {match.displayDate}
+              </div>
+            )}
 
             <div className="space-y-2">
               {[match.homeTeam, match.awayTeam].map((team) => {
@@ -390,8 +400,8 @@ export default function KnockoutBracketStep({
                       key={`tbd-${Math.random()}`}
                       className="flex items-center gap-3 p-3 bg-gray-900 rounded border border-gray-700 opacity-50"
                     >
-                      <div className="text-2xl">❓</div>
-                      <div className="flex-1 text-gray-500">TBD - Complete previous round</div>
+                      <div className="text-xl">❓</div>
+                      <div className="flex-1 text-sm text-gray-500">TBD</div>
                     </div>
                   );
                 }
@@ -405,21 +415,43 @@ export default function KnockoutBracketStep({
                     className={`w-full flex items-center gap-3 p-3 rounded border-2 transition-all ${
                       isWinner
                         ? "bg-green-900/30 border-green-600 shadow-lg"
-                        : "bg-gray-900 border-gray-700 hover:border-gray-600"
+                        : "bg-gray-900 border-gray-700 hover:border-yellow-400/50"
                     }`}
                   >
-                    <div className="text-2xl">{team.flag_emoji || "🏴"}</div>
+                    <TeamFlag
+                      name={team.name}
+                      code={team.code}
+                      flag_emoji={team.flag_emoji}
+                      flag_code={team.flag_code}
+                      size="md"
+                    />
                     <div className="flex-1 text-left">
-                      <div className="font-semibold text-white">{team.name}</div>
-                      <div className="text-xs text-gray-400">{team.seed}</div>
+                      <div className="font-semibold text-white text-sm">{team.name}</div>
+                      <div className="text-xs text-gray-400">{team.slotLabel}</div>
                     </div>
                     {isWinner && (
-                      <div className="text-green-400 font-bold">✓ Winner</div>
+                      <div className="text-green-400 font-bold text-sm">✓</div>
                     )}
                   </button>
                 );
               })}
             </div>
+            
+            {process.env.NODE_ENV === "development" && match.templateDebug && (
+              <div className="mt-2 pt-2 border-t border-gray-700">
+                <div className="text-xs text-gray-500">
+                  Template: {match.templateDebug}
+                </div>
+              </div>
+            )}
+            
+            {match.winnerId && (
+              <div className="mt-2 pt-2 border-t border-gray-700">
+                <div className="text-xs text-green-400 text-center">
+                  Advances to next round
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>

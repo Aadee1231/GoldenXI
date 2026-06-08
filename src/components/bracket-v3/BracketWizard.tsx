@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, Shuffle } from "lucide-react";
+import { createClient } from "@/src/lib/supabase/client";
+import { validateBracketComplete } from "@/src/lib/supabase/queries/brackets-client";
 import GroupStageStep from "./GroupStageStep";
 import ThirdPlaceStep from "./ThirdPlaceStep";
 import KnockoutBracketStep from "./KnockoutBracketStep";
@@ -25,11 +27,171 @@ export default function BracketWizard() {
     knockoutPicks: {},
     currentStep: "groups",
   });
+  const [isLoadingInitialStep, setIsLoadingInitialStep] = useState(true);
+  const [knockoutRound, setKnockoutRound] = useState<"r32" | "r16" | "qf" | "sf" | "final">("r32");
+  const [knockoutRoundComplete, setKnockoutRoundComplete] = useState(false);
 
   const currentStepIndex = STEPS.findIndex((s) => s.id === currentStep);
 
+  useEffect(() => {
+    determineInitialStep();
+  }, []);
+
+  const determineInitialStep = async () => {
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    
+    if (!user) {
+      setIsLoadingInitialStep(false);
+      return;
+    }
+
+    const { data: tournaments } = await supabase
+      .from("tournaments")
+      .select("id")
+      .eq("is_active", true)
+      .limit(1);
+
+    if (!tournaments || tournaments.length === 0) {
+      setIsLoadingInitialStep(false);
+      return;
+    }
+
+    const tournamentId = tournaments[0].id;
+
+    const { data: brackets } = await supabase
+      .from("brackets")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("tournament_id", tournamentId)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (!brackets || brackets.length === 0) {
+      setIsLoadingInitialStep(false);
+      return;
+    }
+
+    const bracket = brackets[0];
+    
+    // TASK 1: Load all saved data
+    const { data: savedGroupPicks } = await supabase
+      .from("group_picks")
+      .select("*")
+      .eq("bracket_id", bracket.id)
+      .order("group_label", { ascending: true })
+      .order("position", { ascending: true });
+
+    const { data: savedThirdPlacePicks } = await supabase
+      .from("third_place_picks")
+      .select("team_id")
+      .eq("bracket_id", bracket.id);
+
+    const { data: savedKnockoutPicks } = await supabase
+      .from("bracket_picks")
+      .select("*")
+      .eq("bracket_id", bracket.id);
+
+    // Hydrate wizardState with actual saved data
+    const groupRankings: GroupRankingInput[] = savedGroupPicks
+      ? savedGroupPicks.map((p) => ({
+          group_label: p.group_label,
+          team_id: p.team_id,
+          position: p.position,
+        }))
+      : [];
+
+    const thirdPlacePicks: string[] = savedThirdPlacePicks
+      ? savedThirdPlacePicks.map((p) => p.team_id)
+      : [];
+
+    const knockoutPicks: Record<string, string | null> = {};
+    if (savedKnockoutPicks) {
+      savedKnockoutPicks.forEach((pick) => {
+        knockoutPicks[pick.match_id] = pick.picked_team_id;
+      });
+    }
+
+    // TASK 2: Determine initial step based on actual data
+    let initialStep: WizardStep = "groups";
+
+    const groupsComplete = groupRankings.length >= 48;
+    const thirdPlaceComplete = thirdPlacePicks.length >= 8;
+    const knockoutComplete = Object.keys(knockoutPicks).length >= 31;
+
+    if (bracket.is_locked) {
+      // Locked brackets always open at Review
+      initialStep = "review";
+    } else if (knockoutComplete) {
+      // All picks complete, go to Review
+      initialStep = "review";
+    } else if (!groupsComplete) {
+      // Groups incomplete, start there
+      initialStep = "groups";
+    } else if (!thirdPlaceComplete) {
+      // Groups done but third-place incomplete
+      initialStep = "third-place";
+    } else if (!knockoutComplete) {
+      // Groups and third-place done, but knockout incomplete
+      initialStep = "knockout";
+      // Set initial knockout round to first incomplete round
+      const r32Complete = Object.keys(knockoutPicks).filter(k => k.includes('r32')).length >= 16;
+      const r16Complete = Object.keys(knockoutPicks).filter(k => k.includes('r16')).length >= 8;
+      const qfComplete = Object.keys(knockoutPicks).filter(k => k.includes('qf')).length >= 4;
+      const sfComplete = Object.keys(knockoutPicks).filter(k => k.includes('sf')).length >= 2;
+      
+      if (!r32Complete) setKnockoutRound("r32");
+      else if (!r16Complete) setKnockoutRound("r16");
+      else if (!qfComplete) setKnockoutRound("qf");
+      else if (!sfComplete) setKnockoutRound("sf");
+      else setKnockoutRound("final");
+    } else {
+      // Fallback to review
+      initialStep = "review";
+    }
+
+    setWizardState({
+      groupRankings,
+      thirdPlacePicks,
+      knockoutPicks,
+      currentStep: initialStep,
+    });
+    setCurrentStep(initialStep);
+    setIsLoadingInitialStep(false);
+  };
+
   const handleNext = async () => {
     await triggerSave();
+    
+    // TASK 4: Validate before advancing
+    if (currentStep === "groups") {
+      if (wizardState.groupRankings.length < 48) {
+        alert("Please complete all group rankings (48 teams) before continuing.");
+        return;
+      }
+    } else if (currentStep === "third-place") {
+      if (wizardState.thirdPlacePicks.length < 8) {
+        alert("Please select exactly 8 third-place teams before continuing.");
+        return;
+      }
+    } else if (currentStep === "knockout") {
+      const roundOrder: ("r32" | "r16" | "qf" | "sf" | "final")[] = ["r32", "r16", "qf", "sf", "final"];
+      const currentRoundIndex = roundOrder.indexOf(knockoutRound);
+      
+      if (!knockoutRoundComplete) {
+        alert(`Please complete all picks for ${roundOrder[currentRoundIndex].toUpperCase()} before continuing.`);
+        return;
+      }
+      
+      if (currentRoundIndex < roundOrder.length - 1) {
+        const nextRound = roundOrder[currentRoundIndex + 1];
+        setKnockoutRound(nextRound);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+    }
     
     const nextIndex = currentStepIndex + 1;
     if (nextIndex < STEPS.length) {
@@ -65,6 +227,27 @@ export default function BracketWizard() {
   };
 
   const handleBack = () => {
+    if (currentStep === "knockout") {
+      const roundOrder: ("r32" | "r16" | "qf" | "sf" | "final")[] = ["r32", "r16", "qf", "sf", "final"];
+      const currentRoundIndex = roundOrder.indexOf(knockoutRound);
+      
+      if (currentRoundIndex > 0) {
+        const prevRound = roundOrder[currentRoundIndex - 1];
+        setKnockoutRound(prevRound);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+    }
+    
+    // TASK 4: From Review, go back to Final round if knockout complete
+    if (currentStep === "review") {
+      setCurrentStep("knockout");
+      setKnockoutRound("final");
+      setWizardState((prev) => ({ ...prev, currentStep: "knockout" }));
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    
     const prevIndex = currentStepIndex - 1;
     if (prevIndex >= 0) {
       const prevStep = STEPS[prevIndex].id;
@@ -75,19 +258,51 @@ export default function BracketWizard() {
   };
 
   const handleGroupRankingsChange = (rankings: GroupRankingInput[]) => {
-    setWizardState((prev) => ({ ...prev, groupRankings: rankings }));
+    // When group rankings change, clear downstream picks since qualified teams changed
+    setWizardState((prev) => ({ 
+      ...prev, 
+      groupRankings: rankings,
+      thirdPlacePicks: [], // Clear third-place picks
+      knockoutPicks: {} // Clear knockout picks
+    }));
   };
 
   const handleThirdPlacePicksChange = (teamIds: string[]) => {
-    setWizardState((prev) => ({ ...prev, thirdPlacePicks: teamIds }));
+    // When third-place picks change, clear knockout picks since qualified teams changed
+    setWizardState((prev) => ({ 
+      ...prev, 
+      thirdPlacePicks: teamIds,
+      knockoutPicks: {} // Clear knockout picks
+    }));
   };
 
   const handleKnockoutPicksChange = (picks: Record<string, string | null>) => {
     setWizardState((prev) => ({ ...prev, knockoutPicks: picks }));
   };
 
+  const handleNavigate = (step: "groups" | "third-place" | "knockout") => {
+    setCurrentStep(step);
+    setWizardState((prev) => ({ ...prev, currentStep: step }));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleKnockoutRoundChange = (round: "r32" | "r16" | "qf" | "sf" | "final", canAdvance: boolean) => {
+    setKnockoutRound(round);
+    setKnockoutRoundComplete(canAdvance);
+  };
+
+  if (isLoadingInitialStep) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-8 pt-24">
+        <div className="text-center py-12">
+          <div className="text-gray-400">Loading your bracket...</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="max-w-7xl mx-auto px-4 py-8 pt-24 pb-32">
       <div className="mb-8">
         <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
           Build Your Bracket
@@ -100,21 +315,58 @@ export default function BracketWizard() {
           {STEPS.map((step, index) => {
             const isActive = step.id === currentStep;
             const isCompleted = index < currentStepIndex;
+            
+            // TASK 3: Determine if step is clickable
+            let isClickable = false;
+            let disabledMessage = "";
+            
+            if (step.id === "groups") {
+              isClickable = true;
+            } else if (step.id === "third-place") {
+              isClickable = wizardState.groupRankings.length >= 48;
+              disabledMessage = "Complete group rankings first";
+            } else if (step.id === "knockout") {
+              isClickable = wizardState.groupRankings.length >= 48 && wizardState.thirdPlacePicks.length >= 8;
+              disabledMessage = wizardState.groupRankings.length < 48 
+                ? "Complete group rankings first" 
+                : "Complete third-place picks first";
+            } else if (step.id === "review") {
+              isClickable = wizardState.groupRankings.length >= 48 && 
+                           wizardState.thirdPlacePicks.length >= 8 && 
+                           Object.keys(wizardState.knockoutPicks).length >= 31;
+              disabledMessage = "Complete all bracket picks first";
+            }
+
+            const handleStepClick = () => {
+              if (!isClickable && !isActive) {
+                alert(disabledMessage);
+                return;
+              }
+              if (isClickable && !isActive) {
+                setCurrentStep(step.id);
+                setWizardState((prev) => ({ ...prev, currentStep: step.id }));
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }
+            };
 
             return (
               <div key={step.id} className="flex items-center flex-1">
                 <div className="flex flex-col items-center flex-1">
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-colors ${
+                  <button
+                    onClick={handleStepClick}
+                    disabled={!isClickable && !isActive}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all ${
                       isActive
                         ? "bg-yellow-400 text-black"
                         : isCompleted
-                        ? "bg-green-600 text-white"
-                        : "bg-gray-700 text-gray-400"
+                        ? "bg-green-600 text-white cursor-pointer hover:bg-green-500"
+                        : isClickable
+                        ? "bg-gray-700 text-gray-400 cursor-pointer hover:bg-gray-600"
+                        : "bg-gray-800 text-gray-600 cursor-not-allowed"
                     }`}
                   >
                     {isCompleted ? "✓" : index + 1}
-                  </div>
+                  </button>
                   <div
                     className={`mt-2 text-xs md:text-sm font-medium transition-colors ${
                       isActive ? "text-yellow-400" : isCompleted ? "text-green-400" : "text-gray-500"
@@ -142,15 +394,26 @@ export default function BracketWizard() {
           <h2 className="text-xl font-semibold text-white">
             {STEPS.find((s) => s.id === currentStep)?.label}
           </h2>
-          {currentStep !== "review" && (
-            <button
-              onClick={handleAutoPick}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors"
-            >
-              <Shuffle className="w-4 h-4" />
-              Auto-Pick
-            </button>
-          )}
+          <div className="flex items-center gap-3">
+            {currentStep !== "review" && (
+              <button
+                onClick={handleAutoPick}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors"
+              >
+                <Shuffle className="w-4 h-4" />
+                Auto-Pick
+              </button>
+            )}
+            {currentStepIndex < STEPS.length - 1 && (
+              <button
+                onClick={handleNext}
+                className="flex items-center gap-2 px-4 py-2 bg-yellow-400 text-black rounded-lg font-semibold hover:bg-yellow-500 transition-colors"
+              >
+                Next
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
 
         {currentStep === "groups" && (
@@ -178,10 +441,15 @@ export default function BracketWizard() {
             onChange={handleKnockoutPicksChange}
             onRegisterSave={registerSaveCallback}
             onRegisterAutoPick={registerAutoPickCallback}
+            onRoundChange={handleKnockoutRoundChange}
           />
         )}
         {currentStep === "review" && (
-          <ReviewBracketStep wizardState={wizardState} onRegisterSave={registerSaveCallback} />
+          <ReviewBracketStep 
+            wizardState={wizardState} 
+            onRegisterSave={registerSaveCallback}
+            onNavigate={handleNavigate}
+          />
         )}
       </div>
 

@@ -1,10 +1,12 @@
 import { Trophy } from "lucide-react";
+import TeamFlag from "@/src/components/ui/TeamFlag";
 
 interface ShareCardProps {
   username: string;
   displayName?: string | null;
   championName?: string | null;
   championFlag?: string | null;
+  championCode?: string | null;
   totalScore?: number;
   variant?: "bracket" | "group";
 }
@@ -14,6 +16,7 @@ export default function ShareCard({
   displayName,
   championName,
   championFlag,
+  championCode,
   totalScore,
   variant = "bracket",
 }: ShareCardProps) {
@@ -37,7 +40,13 @@ export default function ShareCard({
           <div className="space-y-1">
             <div className="text-xs text-zinc-400">Champion Pick</div>
             <div className="flex items-center gap-2">
-              {championFlag && <span className="text-2xl">{championFlag}</span>}
+              <TeamFlag
+                name={championName}
+                code={championCode || ""}
+                flag_emoji={championFlag}
+                flag_code={championCode}
+                size="md"
+              />
               <span className="text-lg font-semibold text-white">
                 {championName}
               </span>

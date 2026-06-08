@@ -1,18 +1,20 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Lock, Unlock, Share2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Lock, Unlock, CheckCircle2, AlertCircle, Edit, RotateCcw } from "lucide-react";
 import { validateBracketComplete, lockBracket, unlockBracket } from "@/src/lib/supabase/queries/brackets-client";
 import { getTeamsByGroup } from "@/src/lib/supabase/queries/group-picks-client";
 import { createClient } from "@/src/lib/supabase/client";
+import TeamFlag from "@/src/components/ui/TeamFlag";
 import type { BracketWizardState, Team } from "@/src/types";
 
 type ReviewBracketStepProps = {
   wizardState: BracketWizardState;
   onRegisterSave: (callback: () => Promise<void>) => void;
+  onNavigate?: (step: "groups" | "third-place" | "knockout") => void;
 };
 
-export default function ReviewBracketStep({ wizardState, onRegisterSave }: ReviewBracketStepProps) {
+export default function ReviewBracketStep({ wizardState, onRegisterSave, onNavigate }: ReviewBracketStepProps) {
   const [validation, setValidation] = useState<{
     valid: boolean;
     errors: string[];
@@ -30,6 +32,7 @@ export default function ReviewBracketStep({ wizardState, onRegisterSave }: Revie
   const [message, setMessage] = useState("");
   const [champion, setChampion] = useState<Team | null>(null);
   const [finalist, setFinalist] = useState<Team | null>(null);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -96,41 +99,47 @@ export default function ReviewBracketStep({ wizardState, onRegisterSave }: Revie
         if (picks && picks.length > 0) {
           const championId = picks[0].picked_team_id;
 
-          const { data: teamsData } = await getTeamsByGroup(tournamentId);
-          if (teamsData && championId) {
-            let foundChampion: Team | null = null;
-            Object.values(teamsData).forEach((groupTeams) => {
-              const team = groupTeams.find((t) => t.id === championId);
-              if (team) foundChampion = team;
-            });
-            setChampion(foundChampion);
-          }
-        }
-
-        const { data: sfMatches } = await supabase
-          .from("matches")
-          .select("*")
-          .eq("tournament_id", tournamentId)
-          .eq("round", "sf");
-
-        if (sfMatches && sfMatches.length > 0) {
-          const { data: sfPicks } = await supabase
-            .from("bracket_picks")
+          // Get semifinal picks first to determine the runner-up
+          const { data: sfMatches } = await supabase
+            .from("matches")
             .select("*")
-            .eq("bracket_id", bracket.id)
-            .in(
-              "match_id",
-              sfMatches.map((m) => m.id)
-            );
+            .eq("tournament_id", tournamentId)
+            .eq("round", "sf");
 
-          if (sfPicks && sfPicks.length === 2) {
-            const sf1Winner = sfPicks[0].picked_team_id;
-            const sf2Winner = sfPicks[1].picked_team_id;
+          let finalistId: string | null = null;
 
-            const finalistId = champion?.id === sf1Winner ? sf2Winner : sf1Winner;
+          if (sfMatches && sfMatches.length > 0) {
+            const { data: sfPicks } = await supabase
+              .from("bracket_picks")
+              .select("*")
+              .eq("bracket_id", bracket.id)
+              .in(
+                "match_id",
+                sfMatches.map((m) => m.id)
+              );
 
-            const { data: teamsData } = await getTeamsByGroup(tournamentId);
-            if (teamsData && finalistId) {
+            if (sfPicks && sfPicks.length === 2) {
+              const sf1Winner = sfPicks[0].picked_team_id;
+              const sf2Winner = sfPicks[1].picked_team_id;
+
+              // The runner-up is the semifinal winner who is NOT the champion
+              finalistId = championId === sf1Winner ? sf2Winner : sf1Winner;
+            }
+          }
+
+          // Now fetch team data for both champion and finalist
+          const { data: teamsData } = await getTeamsByGroup(tournamentId);
+          if (teamsData) {
+            if (championId) {
+              let foundChampion: Team | null = null;
+              Object.values(teamsData).forEach((groupTeams) => {
+                const team = groupTeams.find((t) => t.id === championId);
+                if (team) foundChampion = team;
+              });
+              setChampion(foundChampion);
+            }
+
+            if (finalistId) {
               let foundFinalist: Team | null = null;
               Object.values(teamsData).forEach((groupTeams) => {
                 const team = groupTeams.find((t) => t.id === finalistId);
@@ -182,43 +191,24 @@ export default function ReviewBracketStep({ wizardState, onRegisterSave }: Revie
     setActionLoading(false);
   };
 
-  const handleShare = async () => {
+  const handleReset = async () => {
     if (!bracketId) return;
 
+    setActionLoading(true);
     const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
 
-    if (!user) return;
+    await supabase.from("group_picks").delete().eq("bracket_id", bracketId);
+    await supabase.from("third_place_picks").delete().eq("bracket_id", bracketId);
+    await supabase.from("bracket_picks").delete().eq("bracket_id", bracketId);
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("username")
-      .eq("id", user.id)
-      .single();
+    setShowResetConfirm(false);
+    setMessage("✓ Bracket reset successfully. Redirecting...");
+    
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
 
-    if (profile?.username) {
-      const shareUrl = `${window.location.origin}/u/${profile.username}/bracket`;
-      
-      if (navigator.share) {
-        try {
-          await navigator.share({
-            title: "My GoldenXI Bracket",
-            text: "Check out my World Cup 2026 bracket!",
-            url: shareUrl,
-          });
-        } catch (err) {
-          await navigator.clipboard.writeText(shareUrl);
-          setMessage("✓ Link copied to clipboard!");
-          setTimeout(() => setMessage(""), 3000);
-        }
-      } else {
-        await navigator.clipboard.writeText(shareUrl);
-        setMessage("✓ Link copied to clipboard!");
-        setTimeout(() => setMessage(""), 3000);
-      }
-    }
+    setActionLoading(false);
   };
 
   if (loading) {
@@ -308,11 +298,36 @@ export default function ReviewBracketStep({ wizardState, onRegisterSave }: Revie
         </div>
       </div>
 
+      {!isLocked && (
+        <div className="mb-6 flex flex-wrap gap-3">
+          <button
+            onClick={() => onNavigate?.("groups")}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg font-medium hover:bg-gray-700 transition-colors"
+          >
+            <Edit className="w-4 h-4" />
+            Edit Bracket
+          </button>
+          <button
+            onClick={() => setShowResetConfirm(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-red-900/30 text-red-400 rounded-lg font-medium hover:bg-red-900/50 transition-colors border border-red-600/30"
+          >
+            <RotateCcw className="w-4 h-4" />
+            Reset Bracket
+          </button>
+        </div>
+      )}
+
       {champion && (
         <div className="bg-gradient-to-br from-yellow-900/30 to-yellow-800/20 border-2 border-yellow-600 rounded-lg p-6 mb-6">
           <h3 className="text-lg font-semibold text-yellow-400 mb-4">🏆 Your Champion</h3>
           <div className="flex items-center gap-4">
-            <div className="text-6xl">{champion.flag_emoji || "🏴"}</div>
+            <TeamFlag
+              name={champion.name}
+              code={champion.code}
+              flag_emoji={champion.flag_emoji}
+              flag_code={champion.flag_code}
+              size="xl"
+            />
             <div>
               <div className="text-3xl font-bold text-white">{champion.name}</div>
               <div className="text-gray-400">{champion.code}</div>
@@ -322,7 +337,13 @@ export default function ReviewBracketStep({ wizardState, onRegisterSave }: Revie
             <div className="mt-4 pt-4 border-t border-yellow-600/30">
               <div className="text-sm text-gray-400 mb-2">Runner-up:</div>
               <div className="flex items-center gap-3">
-                <div className="text-3xl">{finalist.flag_emoji || "🏴"}</div>
+                <TeamFlag
+                  name={finalist.name}
+                  code={finalist.code}
+                  flag_emoji={finalist.flag_emoji}
+                  flag_code={finalist.flag_code}
+                  size="lg"
+                />
                 <div className="text-xl font-semibold text-white">{finalist.name}</div>
               </div>
             </div>
@@ -389,15 +410,34 @@ export default function ReviewBracketStep({ wizardState, onRegisterSave }: Revie
             {actionLoading ? "Unlocking..." : "Unlock Bracket"}
           </button>
         )}
-
-        <button
-          onClick={handleShare}
-          className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-        >
-          <Share2 className="w-5 h-5" />
-          Share Bracket
-        </button>
       </div>
+
+      {showResetConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+          <div className="bg-gray-900 rounded-lg border border-red-600/30 p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold text-white mb-2">Reset Bracket?</h3>
+            <p className="text-gray-400 mb-6">
+              This will delete all your picks (group rankings, third-place selections, and knockout picks). This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowResetConfirm(false)}
+                disabled={actionLoading}
+                className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-700 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleReset}
+                disabled={actionLoading}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {actionLoading ? "Resetting..." : "Reset Bracket"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

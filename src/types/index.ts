@@ -25,6 +25,7 @@ export type Team = {
   name: string;
   code: string;
   flag_emoji: string | null;
+  flag_code: string | null;
   group_label: string | null;
   created_at: string;
 };

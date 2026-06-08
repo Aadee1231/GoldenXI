@@ -152,6 +152,18 @@ export async function saveGroupRankings(
     };
   }
 
+  // Cascade delete: When group rankings change, clear downstream picks
+  // since the qualified teams (1st, 2nd, 3rd place) have changed
+  await supabase
+    .from("bracket_third_place_picks")
+    .delete()
+    .eq("bracket_id", bracketId);
+
+  await supabase
+    .from("bracket_picks")
+    .delete()
+    .eq("bracket_id", bracketId);
+
   if (rankings.length === 0) {
     return { success: true, data: [] };
   }

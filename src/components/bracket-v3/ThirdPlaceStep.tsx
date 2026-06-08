@@ -5,6 +5,7 @@ import { CheckCircle2, Circle } from "lucide-react";
 import { getTeamsByGroup } from "@/src/lib/supabase/queries/group-picks-client";
 import { saveThirdPlacePicks, getThirdPlacePicks } from "@/src/lib/supabase/queries/third-place-picks-client";
 import { createClient } from "@/src/lib/supabase/client";
+import TeamFlag from "@/src/components/ui/TeamFlag";
 import type { Team, GroupRankingInput } from "@/src/types";
 
 type ThirdPlaceStepProps = {
@@ -27,7 +28,9 @@ export default function ThirdPlaceStep({
   const [bracketId, setBracketId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadData();
+    if (groupRankings.length > 0) {
+      loadData();
+    }
   }, [groupRankings]);
 
   useEffect(() => {
@@ -207,7 +210,13 @@ export default function ThirdPlaceStep({
                 )}
               </div>
 
-              <div className="text-3xl">{team.flag_emoji || "🏴"}</div>
+              <TeamFlag
+                name={team.name}
+                code={team.code}
+                flag_emoji={team.flag_emoji}
+                flag_code={team.flag_code}
+                size="lg"
+              />
 
               <div className="flex-1 text-left">
                 <div className="font-semibold text-white">{team.name}</div>

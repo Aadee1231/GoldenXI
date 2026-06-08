@@ -5,6 +5,7 @@ import { Trophy, Lock, CheckCircle, XCircle } from "lucide-react";
 import { getPublicBracket } from "@/src/lib/supabase/queries/public-bracket";
 import { createClient } from "@/src/lib/supabase/server";
 import ShareCard from "@/src/components/share/ShareCard";
+import TeamFlag from "@/src/components/ui/TeamFlag";
 
 interface PublicBracketPageProps {
   params: Promise<{ username: string }>;
@@ -74,6 +75,7 @@ async function PublicBracketContent({ username }: { username: string }) {
             displayName={bracket.display_name}
             championName={bracket.champion_name}
             championFlag={bracket.champion_flag}
+            championCode={bracket.champion_code}
             totalScore={bracket.points_earned}
             variant="bracket"
           />
@@ -124,9 +126,13 @@ async function PublicBracketContent({ username }: { username: string }) {
                 <div className="flex items-center justify-between rounded-lg bg-black/30 px-4 py-3">
                   <span className="text-sm text-zinc-400">Champion Pick</span>
                   <div className="flex items-center gap-2">
-                    {bracket.champion_flag && (
-                      <span className="text-lg">{bracket.champion_flag}</span>
-                    )}
+                    <TeamFlag
+                      name={bracket.champion_name}
+                      code={bracket.champion_code || ""}
+                      flag_emoji={bracket.champion_flag}
+                      flag_code={bracket.champion_code}
+                      size="sm"
+                    />
                     <span className="text-sm font-medium text-white">
                       {bracket.champion_name}
                     </span>

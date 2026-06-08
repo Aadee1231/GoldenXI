@@ -65,6 +65,13 @@ export async function saveThirdPlacePicks(
     };
   }
 
+  // Cascade delete: When third-place picks change, clear knockout picks
+  // since the qualified teams (32 teams total) have changed
+  await supabase
+    .from("bracket_picks")
+    .delete()
+    .eq("bracket_id", bracketId);
+
   if (teamIds.length === 0) {
     return { success: true, data: [] };
   }

@@ -5,6 +5,7 @@ import { ChevronUp, ChevronDown, GripVertical } from "lucide-react";
 import { getTeamsByGroup } from "@/src/lib/supabase/queries/group-picks-client";
 import { saveGroupRankings, getGroupRankings } from "@/src/lib/supabase/queries/group-picks-client";
 import { createClient } from "@/src/lib/supabase/client";
+import TeamFlag from "@/src/components/ui/TeamFlag";
 import type { Team, GroupRankingInput } from "@/src/types";
 
 const GROUP_LABELS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
@@ -113,7 +114,13 @@ function GroupCard({ groupLabel, teams, rankedTeams, onRankChange }: GroupCardPr
                 <div className="w-8 h-8 flex items-center justify-center bg-gray-800 rounded font-bold text-white">
                   {position}
                 </div>
-                <div className="text-2xl">{team.flag_emoji || "🏴"}</div>
+                <TeamFlag
+                  name={team.name}
+                  code={team.code}
+                  flag_emoji={team.flag_emoji}
+                  flag_code={team.flag_code}
+                  size="md"
+                />
                 <div className="flex-1">
                   <div className="font-semibold text-white">{team.name}</div>
                   <div className="text-xs text-gray-400">{team.code}</div>
