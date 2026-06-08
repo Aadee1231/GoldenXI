@@ -21,25 +21,26 @@ export default function ShareCard({
   variant = "bracket",
 }: ShareCardProps) {
   return (
-    <div className="relative overflow-hidden rounded-xl border border-yellow-400/30 bg-gradient-to-br from-yellow-400/10 to-yellow-600/5 p-6">
-      <div className="absolute right-0 top-0 h-32 w-32 -translate-y-8 translate-x-8 opacity-10">
+    <div className="relative overflow-hidden rounded-xl border border-yellow-400/30 bg-gradient-to-br from-yellow-400/10 via-yellow-500/5 to-yellow-600/5 p-8 ring-1 ring-yellow-400/20 shadow-lg shadow-yellow-400/10">
+      <div className="absolute right-0 top-0 h-40 w-40 -translate-y-10 translate-x-10 opacity-[0.07]">
         <Trophy className="h-full w-full text-yellow-400" />
       </div>
 
-      <div className="relative space-y-4">
+      <div className="relative space-y-5">
         <div>
-          <div className="text-xs font-semibold uppercase tracking-wider text-yellow-400">
+          <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-yellow-400/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-yellow-400 ring-1 ring-yellow-400/20">
+            <Trophy className="h-3 w-3" />
             GoldenXI
           </div>
-          <h3 className="mt-1 text-2xl font-bold text-white">
+          <h3 className="mt-2 text-3xl font-extrabold text-white">
             {displayName || username}
           </h3>
         </div>
 
         {variant === "bracket" && championName && (
-          <div className="space-y-1">
-            <div className="text-xs text-zinc-400">Champion Pick</div>
-            <div className="flex items-center gap-2">
+          <div className="space-y-2 rounded-lg border border-yellow-400/20 bg-yellow-400/5 p-4">
+            <div className="text-xs font-semibold uppercase tracking-wider text-yellow-400">Champion Pick</div>
+            <div className="flex items-center gap-3">
               <TeamFlag
                 name={championName}
                 code={championCode || ""}
@@ -47,7 +48,7 @@ export default function ShareCard({
                 flag_code={championCode}
                 size="md"
               />
-              <span className="text-lg font-semibold text-white">
+              <span className="text-xl font-bold text-white">
                 {championName}
               </span>
             </div>
@@ -56,12 +57,12 @@ export default function ShareCard({
 
         {totalScore !== undefined && totalScore > 0 && (
           <div className="space-y-1">
-            <div className="text-xs text-zinc-400">Total Score</div>
-            <div className="text-2xl font-bold text-yellow-400">{totalScore}</div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Total Score</div>
+            <div className="text-3xl font-extrabold text-yellow-400">{totalScore} pts</div>
           </div>
         )}
 
-        <div className="pt-2 text-sm text-zinc-300">
+        <div className="pt-2 text-sm font-medium text-zinc-400">
           {variant === "bracket"
             ? "World Cup 2026 Bracket"
             : "World Cup 2026 Group"}

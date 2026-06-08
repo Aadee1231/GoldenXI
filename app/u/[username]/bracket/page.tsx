@@ -62,14 +62,17 @@ async function PublicBracketContent({ username }: { username: string }) {
   return (
     <div className="min-h-screen bg-[#080808] py-20">
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-extrabold text-white">
-            <span className="text-yellow-400">GoldenXI</span>
-          </h1>
-          <p className="mt-2 text-sm text-zinc-400">World Cup Bracket Challenge</p>
+        <div className="mb-10 text-center">
+          <div className="mb-3 inline-flex items-center gap-2">
+            <Trophy className="h-6 w-6 text-yellow-400" />
+            <h1 className="text-3xl font-extrabold text-white">
+              Golden<span className="text-yellow-400">XI</span>
+            </h1>
+          </div>
+          <p className="text-sm text-zinc-500">World Cup 2026 Bracket Challenge</p>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-8">
           <ShareCard
             username={bracket.username}
             displayName={bracket.display_name}
@@ -80,34 +83,34 @@ async function PublicBracketContent({ username }: { username: string }) {
             variant="bracket"
           />
 
-          <div className="rounded-xl border border-white/10 bg-white/5 p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-white">
+          <div className="rounded-xl border border-white/10 bg-white/5 p-6 sm:p-8">
+            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <h2 className="text-xl font-bold text-white sm:text-2xl">
                 {bracket.display_name || bracket.username}'s Bracket
               </h2>
               {bracket.is_locked && (
-                <span className="flex items-center gap-1 rounded-full bg-yellow-400/20 px-3 py-1 text-xs font-medium text-yellow-400">
-                  <Lock className="h-3 w-3" />
+                <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-yellow-400/20 px-3 py-1.5 text-xs font-semibold text-yellow-400 ring-1 ring-yellow-400/30">
+                  <Lock className="h-3.5 w-3.5" />
                   Locked
                 </span>
               )}
             </div>
 
             <div className="space-y-3">
-              <div className="flex items-center justify-between rounded-lg bg-black/30 px-4 py-3">
-                <span className="text-sm text-zinc-400">Status</span>
+              <div className="flex items-center justify-between rounded-lg border border-white/5 bg-black/20 px-4 py-3.5">
+                <span className="text-sm font-medium text-zinc-400">Status</span>
                 <div className="flex items-center gap-2">
                   {bracket.status === "submitted" ? (
                     <>
                       <CheckCircle className="h-4 w-4 text-green-400" />
-                      <span className="text-sm font-medium text-green-400">
+                      <span className="text-sm font-semibold text-green-400">
                         Submitted
                       </span>
                     </>
                   ) : (
                     <>
                       <XCircle className="h-4 w-4 text-zinc-500" />
-                      <span className="text-sm font-medium text-zinc-500">
+                      <span className="text-sm font-semibold text-zinc-500">
                         {bracket.status === "draft" ? "Draft" : "In Progress"}
                       </span>
                     </>
@@ -115,25 +118,25 @@ async function PublicBracketContent({ username }: { username: string }) {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between rounded-lg bg-black/30 px-4 py-3">
-                <span className="text-sm text-zinc-400">Bracket Status</span>
-                <span className="text-sm font-medium text-white">
-                  {bracket.total_picks > 0 ? `${bracket.total_picks} picks made` : "No picks yet"}
+              <div className="flex items-center justify-between rounded-lg border border-white/5 bg-black/20 px-4 py-3.5">
+                <span className="text-sm font-medium text-zinc-400">Picks Made</span>
+                <span className="text-sm font-semibold text-white">
+                  {bracket.total_picks > 0 ? bracket.total_picks : "None yet"}
                 </span>
               </div>
 
               {bracket.champion_name && (
-                <div className="flex items-center justify-between rounded-lg bg-black/30 px-4 py-3">
-                  <span className="text-sm text-zinc-400">Champion Pick</span>
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between rounded-lg border border-yellow-400/20 bg-yellow-400/5 px-4 py-3.5">
+                  <span className="text-sm font-medium text-zinc-400">Champion Pick</span>
+                  <div className="flex items-center gap-2.5">
                     <TeamFlag
                       name={bracket.champion_name}
                       code={bracket.champion_code || ""}
                       flag_emoji={bracket.champion_flag}
                       flag_code={bracket.champion_code}
-                      size="sm"
+                      size="md"
                     />
-                    <span className="text-sm font-medium text-white">
+                    <span className="text-base font-bold text-white">
                       {bracket.champion_name}
                     </span>
                   </div>
@@ -141,10 +144,10 @@ async function PublicBracketContent({ username }: { username: string }) {
               )}
 
               {bracket.points_earned > 0 && (
-                <div className="flex items-center justify-between rounded-lg bg-black/30 px-4 py-3">
-                  <span className="text-sm text-zinc-400">Total Score</span>
-                  <span className="text-lg font-bold text-yellow-400">
-                    {bracket.points_earned}
+                <div className="flex items-center justify-between rounded-lg border border-yellow-400/20 bg-yellow-400/5 px-4 py-3.5">
+                  <span className="text-sm font-medium text-zinc-400">Total Score</span>
+                  <span className="text-xl font-extrabold text-yellow-400">
+                    {bracket.points_earned} pts
                   </span>
                 </div>
               )}
@@ -153,12 +156,18 @@ async function PublicBracketContent({ username }: { username: string }) {
 
           <div className="text-center">
             <Link
-              href="/"
-              className="inline-flex items-center gap-2 rounded-lg bg-yellow-400 px-6 py-3 text-sm font-medium text-black transition hover:bg-yellow-500"
+              href="/bracket"
+              className="inline-flex items-center gap-2 rounded-xl bg-yellow-400 px-8 py-4 text-base font-bold text-black shadow-lg shadow-yellow-400/20 transition-all hover:bg-yellow-300 hover:shadow-yellow-400/40"
             >
-              <Trophy className="h-4 w-4" />
+              <Trophy className="h-5 w-5" />
               Create Your Own Bracket
             </Link>
+          </div>
+
+          <div className="rounded-lg border border-white/5 bg-white/[0.02] p-4 text-center">
+            <p className="text-xs leading-relaxed text-zinc-600">
+              GoldenXI is an independent fan-made game. It is not affiliated with, endorsed by, sponsored by, or officially connected to FIFA, the FIFA World Cup, or any tournament organizer.
+            </p>
           </div>
         </div>
       </div>

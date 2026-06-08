@@ -11,23 +11,33 @@ export default async function LeaderboardPage() {
   const { data: entries, error } = await fetchLeaderboard(50);
 
   return (
-    <div className="min-h-screen px-4 py-24">
-      <div className="mx-auto max-w-3xl">
+    <div className="relative min-h-screen px-4 py-24">
+      {/* Background tournament energy */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+        <div className="absolute left-1/4 top-1/4 h-[500px] w-[500px] rounded-full bg-blue-500/8 blur-3xl" />
+        <div className="absolute right-1/4 bottom-1/4 h-[500px] w-[500px] rounded-full bg-yellow-500/8 blur-3xl" />
+      </div>
+      
+      <div className="relative mx-auto max-w-3xl">
 
         {/* Header */}
-        <div className="mb-10 text-center">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-yellow-400/20 bg-yellow-400/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-yellow-400">
-            <Flame className="h-3.5 w-3.5" />
+        <div className="mb-12 text-center">
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-gradient-to-r from-blue-400/15 to-blue-500/10 px-5 py-2 text-xs font-bold uppercase tracking-widest text-blue-400 shadow-lg shadow-blue-400/10 ring-1 ring-blue-400/20">
+            <Flame className="h-4 w-4" />
             Global Rankings
           </div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
-            Leader<span className="text-yellow-400">board</span>
+          <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl">
+            Leader<span className="relative">
+              <span className="absolute inset-0 blur-xl bg-gradient-to-r from-blue-400 to-yellow-400 opacity-30" />
+              <span className="relative bg-gradient-to-r from-blue-400 to-yellow-400 bg-clip-text text-transparent">board</span>
+            </span>
           </h1>
-          <p className="mt-3 text-sm text-zinc-400">
-            Scoring begins when tournament results are entered. Correct picks earn more points in later rounds.
+          <p className="mt-5 text-sm leading-relaxed text-zinc-400">
+            Scoring begins when tournament results are entered.<br className="hidden sm:inline" />
+            Correct picks earn more points in later rounds.
           </p>
           {error && (
-            <p className="mt-2 text-xs text-red-400/70">
+            <p className="mt-4 rounded-lg border border-red-400/30 bg-red-400/10 px-4 py-2.5 text-xs font-semibold text-red-400 ring-1 ring-red-400/20">
               Error loading leaderboard: {error}
             </p>
           )}
@@ -35,31 +45,31 @@ export default async function LeaderboardPage() {
 
         {/* Top-3 podium strip */}
         {entries.length >= 3 && (
-          <div className="mb-8 grid grid-cols-3 gap-3">
+          <div className="mb-10 grid grid-cols-3 gap-3">
             {[entries[1], entries[0], entries[2]].map((entry, i) => {
-              const heights = ["h-24", "h-32", "h-24"];
+              const heights = ["h-28", "h-36", "h-28"];
               const medals = ["🥈", "🥇", "🥉"];
               return (
                 <div
                   key={entry.bracket_id}
                   className={[
-                    "flex flex-col items-center justify-end gap-1.5 rounded-xl border px-3 pb-4 pt-3 transition",
+                    "flex flex-col items-center justify-end gap-2 rounded-xl border px-3 pb-5 pt-4 transition-all duration-300 hover:scale-105",
                     i === 1
-                      ? "border-yellow-400/40 bg-yellow-400/10"
-                      : "border-white/10 bg-white/[0.04]",
+                      ? "border-yellow-400/40 bg-gradient-to-b from-yellow-400/10 to-yellow-400/5 ring-1 ring-yellow-400/20"
+                      : "border-white/10 bg-white/[0.04] hover:border-white/20",
                     heights[i],
                   ].join(" ")}
                 >
-                  <span className="text-2xl">{medals[i]}</span>
+                  <span className="text-3xl">{medals[i]}</span>
                   <p className="max-w-full truncate text-xs font-bold text-white">
                     {entry.username}
                   </p>
                   {entry.champion_flag && (
-                    <span className="text-base">{entry.champion_flag}</span>
+                    <span className="text-lg">{entry.champion_flag}</span>
                   )}
                   <p
                     className={[
-                      "text-sm font-extrabold tabular-nums",
+                      "text-base font-extrabold tabular-nums",
                       i === 1 ? "text-yellow-400" : "text-zinc-300",
                     ].join(" ")}
                   >
@@ -99,9 +109,11 @@ export default async function LeaderboardPage() {
 
         {/* Footer note */}
         {entries.length > 0 && (
-          <p className="mt-8 text-center text-xs text-zinc-600">
-            Scoring begins when tournament results are entered. Correct picks earn more points in later rounds.
-          </p>
+          <div className="mt-10 rounded-lg border border-blue-400/10 bg-blue-400/5 p-4 text-center">
+            <p className="text-xs leading-relaxed text-zinc-500">
+              Scoring begins when tournament results are entered. Correct picks earn more points in later rounds.
+            </p>
+          </div>
         )}
       </div>
     </div>

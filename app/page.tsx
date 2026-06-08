@@ -1,5 +1,6 @@
 import Link from "next/link";
 import FeatureCard from "@/src/components/ui/FeatureCard";
+import StatusBadge from "@/src/components/ui/StatusBadge";
 import {
   Trophy,
   Users,
@@ -8,35 +9,49 @@ import {
   ArrowRight,
   Star,
 } from "lucide-react";
+import {
+  FloatingSoccerBalls,
+  TournamentColorBeams,
+  StadiumGrid,
+  GoldSpotlight,
+  RadarGradient,
+  TournamentParticles,
+  StadiumLights,
+  PitchMarkings,
+} from "@/src/components/ui/AnimatedBackground";
 
 const features = [
   {
     icon: Trophy,
-    title: "Tournament Bracket",
+    title: "Full Tournament Bracket",
     description:
-      "Build your complete bracket prediction before the tournament starts. Pick winners round by round and rack up points with every correct call.",
+      "Rank every group, choose the best third-place teams, and predict the full road from the Round of 32 to the champion.",
+    color: "gold" as const,
   },
   {
     icon: Users,
     title: "Private Groups",
     description:
-      "Create or join private leagues with friends. Share an invite code, compare brackets, and see who truly knows the beautiful game.",
+      "Create invite-only groups for friends, classmates, coworkers, or family and compete for bragging rights.",
+    color: "green" as const,
   },
   {
     icon: Zap,
     title: "Juggle Counter AI",
     description:
-      "Show off your touch! Use your phone camera to count keep-ups in real time powered by computer vision. Climb the juggle leaderboard.",
-    badge: "AI",
+      "Coming soon: use your camera to count keep-ups and climb the skill leaderboard.",
+    badge: "Coming Soon",
+    color: "blue" as const,
   },
   {
     icon: ShieldCheck,
     title: "Goalkeeper Reaction",
     description:
-      "Test your reflexes with our AI penalty save challenge. Dive left or right and see how you stack up against GoldenXI players worldwide.",
-    badge: "AI",
+      "Coming soon: test your reflexes in a fast penalty-save challenge.",
+    badge: "Coming Soon",
+    color: "red" as const,
   },
-];
+] as const;
 
 const stats = [
   { value: "48", label: "Teams" },
@@ -49,32 +64,32 @@ export default function HomePage() {
     <div className="flex flex-col">
       {/* ── Hero ── */}
       <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-4 pt-16 text-center sm:px-6 lg:px-8">
-        {/* Radial glow */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 flex items-center justify-center"
-        >
-          <div className="h-[600px] w-[600px] rounded-full bg-yellow-400/10 blur-[120px]" />
-        </div>
-
-        {/* Grid overlay */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:48px_48px]"
-        />
+        {/* Background layers - stadium atmosphere */}
+        <TournamentColorBeams />
+        <StadiumLights />
+        <GoldSpotlight />
+        <RadarGradient />
+        <PitchMarkings />
+        <StadiumGrid />
+        <FloatingSoccerBalls />
+        <TournamentParticles />
 
         <div className="relative z-10 mx-auto max-w-4xl">
           {/* Badge */}
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-yellow-400/30 bg-yellow-400/10 px-4 py-1.5 text-sm font-medium text-yellow-400">
-            <Star className="h-3.5 w-3.5" />
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-yellow-400/40 bg-gradient-to-r from-yellow-400/15 via-yellow-400/10 to-yellow-400/15 px-5 py-2 text-sm font-bold text-yellow-400 shadow-lg shadow-yellow-400/10 ring-1 ring-yellow-400/20">
+            <Star className="h-4 w-4" />
             World Cup 2026 — Build Your Bracket
           </div>
 
           {/* Headline */}
-          <h1 className="mb-6 text-5xl font-extrabold leading-tight tracking-tight text-white sm:text-6xl lg:text-7xl">
-            Pick the Groups. Build the Bracket.{" "}
-            <span className="bg-gradient-to-r from-yellow-300 to-yellow-500 bg-clip-text text-transparent">
-              Crown Your Champion.
+          <h1 className="mb-6 text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
+            <span className="text-white">Pick the Groups.</span>{" "}
+            <span className="bg-gradient-to-r from-blue-400 to-blue-500 bg-clip-text text-transparent">Build the Bracket.</span>{" "}
+            <span className="relative inline-block">
+              <span className="absolute inset-0 blur-xl bg-gradient-to-r from-yellow-400 to-yellow-500 opacity-30" />
+              <span className="relative bg-gradient-to-r from-yellow-300 to-yellow-500 bg-clip-text text-transparent">
+                Crown Your Champion.
+              </span>
             </span>
           </h1>
 
@@ -87,29 +102,38 @@ export default function HomePage() {
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link
               href="/bracket"
-              className="group flex items-center gap-2 rounded-xl bg-yellow-400 px-8 py-4 text-base font-bold text-black shadow-lg shadow-yellow-400/20 transition-all hover:bg-yellow-300 hover:shadow-yellow-400/40"
+              className="group relative flex items-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-yellow-400 to-yellow-500 px-8 py-4 text-base font-bold text-black shadow-lg shadow-yellow-400/30 transition-all hover:shadow-yellow-400/50 hover:scale-105"
             >
-              Build My Bracket
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 to-yellow-400 opacity-0 transition-opacity group-hover:opacity-100" />
+              <span className="relative">Build My Bracket</span>
+              <ArrowRight className="relative h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
             <Link
               href="/leaderboard"
-              className="flex items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-8 py-4 text-base font-bold text-white backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/10"
+              className="group flex items-center gap-2 rounded-xl border border-blue-400/30 bg-gradient-to-r from-blue-400/10 to-blue-500/10 px-8 py-4 text-base font-bold text-white shadow-lg shadow-blue-400/10 ring-1 ring-blue-400/20 backdrop-blur-sm transition-all hover:border-blue-400/50 hover:shadow-blue-400/20 hover:scale-105"
             >
               View Leaderboard
             </Link>
           </div>
 
           {/* Stats */}
-          <div className="mt-16 flex items-center justify-center gap-12">
-            {stats.map((stat) => (
-              <div key={stat.label} className="text-center">
-                <div className="text-3xl font-extrabold text-yellow-400 sm:text-4xl">
-                  {stat.value}
+          <div className="mt-16 flex items-center justify-center gap-8 sm:gap-12">
+            {stats.map((stat, i) => {
+              const colors = [
+                { text: "text-red-400", glow: "shadow-red-400/20" },
+                { text: "text-blue-400", glow: "shadow-blue-400/20" },
+                { text: "text-green-400", glow: "shadow-green-400/20" },
+              ];
+              const color = colors[i];
+              return (
+                <div key={stat.label} className="group text-center">
+                  <div className={`text-3xl font-extrabold transition-all sm:text-4xl ${color.text} drop-shadow-lg ${color.glow}`}>
+                    {stat.value}
+                  </div>
+                  <div className="mt-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-500 sm:text-sm">{stat.label}</div>
                 </div>
-                <div className="mt-1 text-sm text-zinc-500">{stat.label}</div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -125,12 +149,11 @@ export default function HomePage() {
         <div className="mx-auto max-w-7xl">
           <div className="mb-16 text-center">
             <h2 className="mb-4 text-3xl font-extrabold text-white sm:text-4xl">
-              Everything you need to{" "}
-              <span className="text-yellow-400">win the group</span>
+              Your 2026 tournament{" "}
+              <span className="text-yellow-400">command center</span>
             </h2>
-            <p className="mx-auto max-w-xl text-zinc-400">
-              From bracket predictions to AI-powered mini-games — GoldenXI is
-              your home for the tournament.
+            <p className="mx-auto max-w-2xl text-lg text-zinc-400">
+              Build your bracket, challenge your friends, and climb the GoldenXI rankings as the tournament unfolds.
             </p>
           </div>
 
@@ -143,46 +166,74 @@ export default function HomePage() {
       </section>
 
       {/* ── How It Works ── */}
-      <section className="border-t border-white/10 px-4 py-24 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-4xl text-center">
+      <section className="relative border-t border-white/10 px-4 py-24 sm:px-6 lg:px-8">
+        {/* Tournament background */}
+        <div className="pointer-events-none absolute inset-0 opacity-[0.04]" aria-hidden="true">
+          <div className="absolute left-1/2 top-1/2 h-px w-full -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-transparent via-white to-transparent" />
+          <div className="absolute left-1/2 top-1/2 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white" />
+          <div className="absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white" />
+        </div>
+        
+        {/* Color glows */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+          <div className="absolute left-1/4 top-1/2 h-64 w-64 -translate-y-1/2 rounded-full bg-red-500/5 blur-3xl" />
+          <div className="absolute right-1/4 top-1/2 h-64 w-64 -translate-y-1/2 rounded-full bg-green-500/5 blur-3xl" />
+        </div>
+
+        <div className="relative mx-auto max-w-5xl text-center">
           <h2 className="mb-16 text-3xl font-extrabold text-white sm:text-4xl">
-            Get started in{" "}
-            <span className="text-yellow-400">three steps</span>
+            Start your run in{" "}
+            <span className="bg-gradient-to-r from-yellow-400 to-yellow-500 bg-clip-text text-transparent">three steps</span>
           </h2>
 
-          <div className="grid gap-8 sm:grid-cols-3">
+          <div className="relative grid gap-10 sm:grid-cols-3">
+            {/* Connecting lines on desktop */}
+            <div className="pointer-events-none absolute left-0 top-8 hidden h-px w-full bg-gradient-to-r from-transparent via-yellow-400/30 to-transparent sm:block" aria-hidden="true" />
+            <div className="pointer-events-none absolute left-0 top-8 hidden h-px w-full animate-pulse-slow bg-gradient-to-r from-blue-400/20 via-green-400/20 to-red-400/20 blur-sm sm:block" aria-hidden="true" />
+            
             {[
               {
                 step: "01",
                 title: "Create your account",
-                desc: "Sign up in seconds — no credit card required.",
+                desc: "Sign up in seconds and save your tournament picks.",
+                color: "blue",
               },
               {
                 step: "02",
                 title: "Build your bracket",
-                desc: "Pick your winners for every match from Group Stage to Final.",
+                desc: "Rank the groups, choose your knockout winners, and crown your champion.",
+                color: "gold",
               },
               {
                 step: "03",
-                title: "Invite your friends",
-                desc: "Share your private group code and see who the real football genius is.",
+                title: "Invite your group",
+                desc: "Share your code and find out who really knows the game.",
+                color: "green",
               },
-            ].map(({ step, title, desc }) => (
-              <div key={step} className="flex flex-col items-center gap-4">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-yellow-400/10 ring-1 ring-yellow-400/20">
-                  <span className="text-xl font-black text-yellow-400">
-                    {step}
-                  </span>
+            ].map(({ step, title, desc, color }) => {
+              const colorMap = {
+                blue: { bg: "bg-blue-400/15", ring: "ring-blue-400/40", text: "text-blue-400", shadow: "shadow-blue-400/20" },
+                gold: { bg: "bg-yellow-400/15", ring: "ring-yellow-400/40", text: "text-yellow-400", shadow: "shadow-yellow-400/20" },
+                green: { bg: "bg-green-400/15", ring: "ring-green-400/40", text: "text-green-400", shadow: "shadow-green-400/20" },
+              };
+              const c = colorMap[color as keyof typeof colorMap];
+              return (
+                <div key={step} className="group relative flex flex-col items-center gap-4">
+                  <div className={`flex h-16 w-16 items-center justify-center rounded-2xl ${c.bg} shadow-lg ${c.shadow} ring-2 ${c.ring} backdrop-blur-sm transition-all group-hover:scale-110`}>
+                    <span className={`text-2xl font-black ${c.text}`}>
+                      {step}
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-bold text-white">{title}</h3>
+                  <p className="text-sm leading-relaxed text-zinc-400">{desc}</p>
                 </div>
-                <h3 className="text-lg font-semibold text-white">{title}</h3>
-                <p className="text-sm text-zinc-400">{desc}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
-          <div className="mt-14">
+          <div className="mt-16">
             <Link
-              href="/auth/signup"
+              href="/bracket"
               className="group inline-flex items-center gap-2 rounded-xl bg-yellow-400 px-10 py-4 text-base font-bold text-black shadow-lg shadow-yellow-400/20 transition-all hover:bg-yellow-300 hover:shadow-yellow-400/40"
             >
               Start for free
