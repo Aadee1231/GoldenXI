@@ -162,3 +162,44 @@ export type PublicBracketData = {
   total_picks: number;
   public_bracket: boolean;
 };
+
+export type GroupPick = {
+  id: string;
+  bracket_id: string;
+  group_label: string;
+  team_id: string;
+  position: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type GroupRankingInput = {
+  group_label: string;
+  team_id: string;
+  position: number;
+};
+
+export type ThirdPlacePick = {
+  id: string;
+  bracket_id: string;
+  team_id: string;
+  created_at: string;
+};
+
+export type ThirdPlacePickInput = {
+  team_id: string;
+};
+
+export type BracketWizardState = {
+  groupRankings: GroupRankingInput[];
+  thirdPlacePicks: string[];
+  knockoutPicks: Record<string, string | null>;
+  currentStep: "groups" | "third-place" | "knockout" | "review";
+};
+
+export type CompleteBracketData = {
+  bracket: Bracket;
+  groupPicks: GroupPick[];
+  thirdPlacePicks: ThirdPlacePick[];
+  knockoutPicks: BracketPick[];
+};

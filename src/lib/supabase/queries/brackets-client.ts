@@ -1,5 +1,7 @@
 import { createClient } from "../client";
-import type { Bracket, BracketPick } from "@/src/types";
+import type { Bracket, BracketPick, CompleteBracketData, Match } from "@/src/types";
+import { getGroupRankings } from "./group-picks-client";
+import { getThirdPlacePicks } from "./third-place-picks-client";
 
 export type BracketPickInput = {
   match_id: string;
@@ -340,7 +342,7 @@ export async function lockBracket(
 
   const { data: bracket, error: bracketError } = await supabase
     .from("brackets")
-    .select("*, bracket_picks(id)")
+    .select("*")
     .eq("id", bracketId)
     .eq("user_id", user.id)
     .single();
@@ -353,9 +355,35 @@ export async function lockBracket(
     return { success: false, error: "Bracket is already locked" };
   }
 
-  const pickCount = bracket.bracket_picks?.length || 0;
-  if (pickCount < 15) {
-    return { success: false, error: "Cannot lock incomplete bracket. You need 15 picks." };
+  const validation = await validateBracketComplete(bracketId);
+
+  const isLegacyBracket = validation.counts.knockoutPicks >= 15 && 
+                          validation.counts.groupPicks === 0 && 
+                          validation.counts.thirdPlacePicks === 0;
+
+  const isNewFormatBracket = validation.counts.groupPicks === 48 && 
+                             validation.counts.thirdPlacePicks === 8 && 
+                             validation.counts.knockoutPicks === 31;
+
+  if (!isLegacyBracket && !isNewFormatBracket) {
+    const errorMessages = [
+      "Cannot lock incomplete bracket.",
+      `Current picks: ${validation.counts.groupPicks} group rankings, ${validation.counts.thirdPlacePicks} third-place selections, ${validation.counts.knockoutPicks} knockout picks.`,
+      "",
+      "World Cup 2026 format requires:",
+      "• 48 group rankings (12 groups × 4 positions)",
+      "• 8 third-place team selections",
+      "• 31 knockout match picks (R32 + R16 + QF + SF + Final)",
+      "Total: 87 picks",
+    ];
+
+    if (validation.errors.length > 0) {
+      errorMessages.push("");
+      errorMessages.push("Specific issues:");
+      validation.errors.forEach((err) => errorMessages.push(`• ${err}`));
+    }
+
+    return { success: false, error: errorMessages.join("\n") };
   }
 
   const now = new Date().toISOString();
@@ -464,4 +492,164 @@ export async function canUnlockBracket(
   }
 
   return { canUnlock: true };
+}
+
+export async function getKnockoutMatches(tournamentId?: string): Promise<{
+  data: Match[] | null;
+  error: string | null;
+}> {
+  const supabase = createClient();
+
+  let tid = tournamentId;
+  if (!tid) {
+    const { id, error } = await getActiveTournamentId();
+    if (error || !id) {
+      return { data: null, error: error || "No active tournament found" };
+    }
+    tid = id;
+  }
+
+  const { data: matches, error: matchesError } = await supabase
+    .from("matches")
+    .select("*")
+    .eq("tournament_id", tid)
+    .in("round", ["r32", "r16", "qf", "sf", "final"])
+    .order("round", { ascending: true })
+    .order("match_date", { ascending: true });
+
+  if (matchesError) {
+    return { data: null, error: matchesError.message };
+  }
+
+  return { data: (matches || []) as Match[], error: null };
+}
+
+export async function getAllBracketDataForUser(bracketId?: string): Promise<{
+  data: CompleteBracketData | null;
+  error: string | null;
+}> {
+  const supabase = createClient();
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { data: null, error: "You must be logged in" };
+  }
+
+  let bid = bracketId;
+  if (!bid) {
+    const { id: tournamentId, error: tournamentError } = await getActiveTournamentId();
+    if (tournamentError || !tournamentId) {
+      return { data: null, error: tournamentError || "No active tournament found" };
+    }
+
+    const { data: brackets, error: bracketError } = await supabase
+      .from("brackets")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("tournament_id", tournamentId)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (bracketError) {
+      return { data: null, error: bracketError.message };
+    }
+
+    if (!brackets || brackets.length === 0) {
+      return { data: null, error: "No bracket found for this tournament" };
+    }
+
+    bid = brackets[0].id;
+  }
+
+  const { data: bracket, error: bracketError } = await supabase
+    .from("brackets")
+    .select("*")
+    .eq("id", bid)
+    .eq("user_id", user.id)
+    .single();
+
+  if (bracketError || !bracket) {
+    return { data: null, error: "Bracket not found" };
+  }
+
+  const finalBracketId = bracket.id;
+
+  const [groupPicksResult, thirdPlacePicksResult, knockoutPicksResult] = await Promise.all([
+    getGroupRankings(finalBracketId),
+    getThirdPlacePicks(finalBracketId),
+    supabase.from("bracket_picks").select("*").eq("bracket_id", finalBracketId),
+  ]);
+
+  if (groupPicksResult.error) {
+    return { data: null, error: `Failed to load group picks: ${groupPicksResult.error}` };
+  }
+
+  if (thirdPlacePicksResult.error) {
+    return { data: null, error: `Failed to load third-place picks: ${thirdPlacePicksResult.error}` };
+  }
+
+  if (knockoutPicksResult.error) {
+    return { data: null, error: `Failed to load knockout picks: ${knockoutPicksResult.error.message}` };
+  }
+
+  return {
+    data: {
+      bracket: bracket as Bracket,
+      groupPicks: groupPicksResult.data || [],
+      thirdPlacePicks: thirdPlacePicksResult.data || [],
+      knockoutPicks: (knockoutPicksResult.data || []) as BracketPick[],
+    },
+    error: null,
+  };
+}
+
+export async function validateBracketComplete(bracketId: string): Promise<{
+  valid: boolean;
+  errors: string[];
+  counts: {
+    groupPicks: number;
+    thirdPlacePicks: number;
+    knockoutPicks: number;
+    total: number;
+  };
+}> {
+  const { data, error } = await getAllBracketDataForUser(bracketId);
+
+  if (error || !data) {
+    return {
+      valid: false,
+      errors: [error || "Failed to load bracket data"],
+      counts: { groupPicks: 0, thirdPlacePicks: 0, knockoutPicks: 0, total: 0 },
+    };
+  }
+
+  const errors: string[] = [];
+  const groupPicksCount = data.groupPicks.length;
+  const thirdPlacePicksCount = data.thirdPlacePicks.length;
+  const knockoutPicksCount = data.knockoutPicks.length;
+
+  if (groupPicksCount !== 48) {
+    errors.push(`Expected 48 group rankings (12 groups × 4 positions), got ${groupPicksCount}`);
+  }
+
+  if (thirdPlacePicksCount !== 8) {
+    errors.push(`Expected 8 third-place team selections, got ${thirdPlacePicksCount}`);
+  }
+
+  if (knockoutPicksCount !== 31) {
+    errors.push(`Expected 31 knockout picks (16 R32 + 8 R16 + 4 QF + 2 SF + 1 Final), got ${knockoutPicksCount}`);
+  }
+
+  const totalPicks = groupPicksCount + thirdPlacePicksCount + knockoutPicksCount;
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    counts: {
+      groupPicks: groupPicksCount,
+      thirdPlacePicks: thirdPlacePicksCount,
+      knockoutPicks: knockoutPicksCount,
+      total: totalPicks,
+    },
+  };
 }
