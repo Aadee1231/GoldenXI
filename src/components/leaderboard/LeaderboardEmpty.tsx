@@ -12,8 +12,7 @@ export default function LeaderboardEmpty() {
           No brackets submitted yet
         </h2>
         <p className="mt-2 max-w-sm text-sm text-zinc-500">
-          Be the first to lock in your picks and claim the top spot. The
-          leaderboard updates as results come in.
+          Be the first to lock in your picks and claim the top spot. Scoring begins when tournament results are entered.
         </p>
       </div>
       <Link

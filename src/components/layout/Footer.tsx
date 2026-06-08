@@ -15,6 +15,11 @@ export default function Footer() {
             © {new Date().getFullYear()} GoldenXI. Built for soccer fans.
           </p>
         </div>
+        <div className="mt-6 text-center">
+          <p className="text-xs text-zinc-600 max-w-3xl mx-auto">
+            GoldenXI is an independent fan-made game. It is not affiliated with, endorsed by, sponsored by, or officially connected to FIFA, the FIFA World Cup, or any tournament organizer.
+          </p>
+        </div>
       </div>
     </footer>
   );

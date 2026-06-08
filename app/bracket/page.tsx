@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/src/lib/supabase/server";
 import { needsProfileSetup } from "@/src/lib/supabase/queries/profiles";
-import BracketPageV2 from "@/src/components/bracket/BracketPageV2";
+import BracketWizard from "@/src/components/bracket-v3/BracketWizard";
 import BracketShareSection from "@/src/components/bracket/BracketShareSection";
 
 export const metadata = {
@@ -25,8 +25,8 @@ export default async function Page() {
   }
 
   return (
-    <div>
-      <BracketPageV2 />
+    <div className="min-h-screen bg-[#080808]">
+      <BracketWizard />
       <div className="mx-auto max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
         <Suspense fallback={<div className="h-64 animate-pulse rounded-xl bg-white/5" />}>
           <BracketShareSection />

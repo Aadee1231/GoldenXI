@@ -114,9 +114,9 @@ async function PublicBracketContent({ username }: { username: string }) {
               </div>
 
               <div className="flex items-center justify-between rounded-lg bg-black/30 px-4 py-3">
-                <span className="text-sm text-zinc-400">Picks Made</span>
+                <span className="text-sm text-zinc-400">Bracket Status</span>
                 <span className="text-sm font-medium text-white">
-                  {bracket.total_picks} / 15
+                  {bracket.total_picks > 0 ? `${bracket.total_picks} picks made` : "No picks yet"}
                 </span>
               </div>
 

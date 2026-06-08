@@ -24,8 +24,7 @@ export default async function LeaderboardPage() {
             Leader<span className="text-yellow-400">board</span>
           </h1>
           <p className="mt-3 text-sm text-zinc-400">
-            Rankings update as tournament results come in. Points are awarded
-            for correct picks in each round.
+            Scoring begins when tournament results are entered. Correct picks earn more points in later rounds.
           </p>
           {error && (
             <p className="mt-2 text-xs text-red-400/70">
@@ -101,8 +100,7 @@ export default async function LeaderboardPage() {
         {/* Footer note */}
         {entries.length > 0 && (
           <p className="mt-8 text-center text-xs text-zinc-600">
-            Points are calculated based on correct picks per round. Scoring
-            activates once matches are marked complete.
+            Scoring begins when tournament results are entered. Correct picks earn more points in later rounds.
           </p>
         )}
       </div>

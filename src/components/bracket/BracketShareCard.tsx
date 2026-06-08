@@ -119,7 +119,7 @@ export default function BracketShareCard({
         {!bracketComplete && (
           <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-4 py-3">
             <p className="text-xs text-yellow-400">
-              Your bracket is incomplete. Complete all 15 picks for the best sharing experience.
+              Your bracket is incomplete. Complete all picks for the best sharing experience.
             </p>
           </div>
         )}

@@ -39,9 +39,9 @@ const features = [
 ];
 
 const stats = [
-  { value: "32", label: "Teams" },
-  { value: "64", label: "Matches" },
-  { value: "∞", label: "Rivalries" },
+  { value: "48", label: "Teams" },
+  { value: "12", label: "Groups" },
+  { value: "1", label: "Champion" },
 ];
 
 export default function HomePage() {
@@ -72,18 +72,15 @@ export default function HomePage() {
 
           {/* Headline */}
           <h1 className="mb-6 text-5xl font-extrabold leading-tight tracking-tight text-white sm:text-6xl lg:text-7xl">
-            Predict. Compete.{" "}
+            Pick the Groups. Build the Bracket.{" "}
             <span className="bg-gradient-to-r from-yellow-300 to-yellow-500 bg-clip-text text-transparent">
-              Dominate.
+              Crown Your Champion.
             </span>
           </h1>
 
           {/* Tagline */}
           <p className="mx-auto mb-10 max-w-2xl text-lg leading-relaxed text-zinc-400 sm:text-xl">
-            Build your perfect World Cup bracket, challenge friends in private
-            groups, and prove your soccer knowledge with{" "}
-            <span className="font-semibold text-white">GoldenXI</span> — the
-            ultimate tournament fan experience.
+            Create your full 2026 tournament prediction, choose your knockout winners, and compete with friends in private GoldenXI groups.
           </p>
 
           {/* CTA buttons */}
@@ -92,7 +89,7 @@ export default function HomePage() {
               href="/bracket"
               className="group flex items-center gap-2 rounded-xl bg-yellow-400 px-8 py-4 text-base font-bold text-black shadow-lg shadow-yellow-400/20 transition-all hover:bg-yellow-300 hover:shadow-yellow-400/40"
             >
-              Create Bracket
+              Build My Bracket
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
             <Link
