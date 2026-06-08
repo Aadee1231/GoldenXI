@@ -16,11 +16,12 @@ import type { Match, MatchRound, BracketPick } from "@/src/types";
 
 /** Maps each round to its point value */
 const ROUND_POINTS: Record<MatchRound, number> = {
-  group: 0,   // Group stage: no points (bracket building only)
-  r16: 1,     // Round of 16: 1 point
-  qf: 2,      // Quarterfinals: 2 points
-  sf: 4,      // Semifinals: 4 points
-  final: 8,   // Final/Champion: 8 points
+  group: 0,   // Group stage: no points yet (will be scored via group_picks table)
+  r32: 1,     // Round of 32: 1 point
+  r16: 2,     // Round of 16: 2 points
+  qf: 4,      // Quarterfinals: 4 points
+  sf: 8,      // Semifinals: 8 points
+  final: 16,  // Final/Champion: 16 points
 };
 
 /**
@@ -216,8 +217,11 @@ export function calculateBracketScore(
     }
   }
 
-  // Max possible score: 8 R16 + 4 QF + 2 SF + 1 Final = 8*1 + 4*2 + 2*4 + 1*8 = 32
-  const maxScore = 32;
+  // Max possible score (knockout only): 16 R32 + 8 R16 + 4 QF + 2 SF + 1 Final
+  // = 16*1 + 8*2 + 4*4 + 2*8 + 1*16 = 16+16+16+16+16 = 80 points
+  // Note: Group stage picks (44 points) scored separately via bracket_group_picks
+  // Total max with groups: 80 + 44 = 124 points
+  const maxScore = 80; // Knockout bracket only (legacy compatibility)
 
   return {
     totalScore,

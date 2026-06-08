@@ -29,7 +29,7 @@ export type Team = {
   created_at: string;
 };
 
-export type MatchRound = "group" | "r16" | "qf" | "sf" | "final";
+export type MatchRound = "group" | "r32" | "r16" | "qf" | "sf" | "final";
 
 export type Match = {
   id: string;
