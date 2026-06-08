@@ -19,6 +19,13 @@ import {
   StadiumLights,
   PitchMarkings,
 } from "@/src/components/ui/AnimatedBackground";
+import {
+  SoccerPitchOverlay,
+  PitchGrassPattern,
+  SoccerBallPattern,
+  StadiumFloodlightGlow,
+  PitchGreenGlow,
+} from "@/src/components/ui/SoccerPitchBackground";
 
 const features = [
   {
@@ -64,20 +71,24 @@ export default function HomePage() {
     <div className="flex flex-col">
       {/* ── Hero ── */}
       <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-4 pt-16 text-center sm:px-6 lg:px-8">
-        {/* Background layers - stadium atmosphere */}
+        {/* Background layers - soccer pitch atmosphere */}
+        <PitchGrassPattern />
+        <SoccerPitchOverlay />
+        <PitchGreenGlow />
+        <StadiumFloodlightGlow />
         <TournamentColorBeams />
-        <StadiumLights />
         <GoldSpotlight />
         <RadarGradient />
-        <PitchMarkings />
-        <StadiumGrid />
+        <SoccerBallPattern />
         <FloatingSoccerBalls />
         <TournamentParticles />
 
         <div className="relative z-10 mx-auto max-w-4xl">
           {/* Badge */}
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-yellow-400/40 bg-gradient-to-r from-yellow-400/15 via-yellow-400/10 to-yellow-400/15 px-5 py-2 text-sm font-bold text-yellow-400 shadow-lg shadow-yellow-400/10 ring-1 ring-yellow-400/20">
-            <Star className="h-4 w-4" />
+          <div className="group relative mb-6 inline-flex items-center gap-2 overflow-hidden rounded-full border border-yellow-400/40 bg-gradient-to-r from-yellow-400/15 via-yellow-400/10 to-yellow-400/15 px-5 py-2 text-sm font-bold text-yellow-400 shadow-lg shadow-yellow-400/10 ring-1 ring-yellow-400/20">
+            {/* Animated glow */}
+            <div className="absolute inset-0 -z-10 animate-pulse-slow bg-yellow-400/20 blur-xl" />
+            <Star className="h-4 w-4 animate-pulse-slow" />
             World Cup 2026 — Build Your Bracket
           </div>
 
@@ -95,7 +106,7 @@ export default function HomePage() {
 
           {/* Tagline */}
           <p className="mx-auto mb-10 max-w-2xl text-lg leading-relaxed text-zinc-400 sm:text-xl">
-            Create your full 2026 tournament prediction, choose your knockout winners, and compete with friends in private GoldenXI groups.
+            Create your full World Cup 2026 tournament prediction, choose your knockout winners, and compete with friends in private GoldenXI groups.
           </p>
 
           {/* CTA buttons */}
