@@ -1,4 +1,5 @@
-import type { LucideIcon } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, type LucideIcon } from "lucide-react";
 
 type FeatureCardProps = {
   icon: LucideIcon;
@@ -6,6 +7,7 @@ type FeatureCardProps = {
   description: string;
   badge?: string;
   color?: "gold" | "green" | "blue" | "red";
+  href?: string;
 };
 
 export default function FeatureCard({
@@ -14,6 +16,7 @@ export default function FeatureCard({
   description,
   badge,
   color = "gold",
+  href,
 }: FeatureCardProps) {
   const isComingSoon = badge === "Coming Soon";
   
@@ -41,9 +44,9 @@ export default function FeatureCard({
   };
   
   const style = colorStyles[color];
-  
-  return (
-    <div className={`group relative rounded-2xl border border-white/10 bg-white/5 p-6 shadow-lg transition-all duration-300 hover:bg-white/8 hover:scale-105 ${style.border}`}>
+
+  const inner = (
+    <>
       <div className="mb-4 flex items-start justify-between">
         <div className={`flex h-14 w-14 items-center justify-center rounded-xl ring-2 transition-all ${style.icon}`}>
           <Icon className={`h-7 w-7 ${style.iconColor}`} />
@@ -60,6 +63,24 @@ export default function FeatureCard({
       </div>
       <h3 className="mb-2.5 text-lg font-bold text-white">{title}</h3>
       <p className="text-sm leading-relaxed text-zinc-400">{description}</p>
-    </div>
+      {href && (
+        <span className={`mt-4 inline-flex items-center gap-1 text-sm font-bold ${style.iconColor}`}>
+          Play now
+          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+        </span>
+      )}
+    </>
   );
+
+  const className = `group relative block rounded-2xl border border-white/10 bg-white/5 p-6 shadow-lg transition-all duration-300 hover:bg-white/8 hover:scale-105 ${style.border}`;
+
+  if (href) {
+    return (
+      <Link href={href} className={className}>
+        {inner}
+      </Link>
+    );
+  }
+
+  return <div className={className}>{inner}</div>;
 }
