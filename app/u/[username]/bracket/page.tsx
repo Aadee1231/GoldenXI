@@ -2,10 +2,14 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Trophy, Lock, CheckCircle, XCircle } from "lucide-react";
-import { getPublicBracket } from "@/src/lib/supabase/queries/public-bracket";
+import {
+  getPublicBracket,
+  getPublicBracketRounds,
+} from "@/src/lib/supabase/queries/public-bracket";
 import { createClient } from "@/src/lib/supabase/server";
 import ShareCard from "@/src/components/share/ShareCard";
 import TeamFlag from "@/src/components/ui/TeamFlag";
+import PublicKnockoutBracket from "@/src/components/bracket/PublicKnockoutBracket";
 
 interface PublicBracketPageProps {
   params: Promise<{ username: string }>;
@@ -36,6 +40,9 @@ async function PublicBracketContent({ username }: { username: string }) {
 
   const tournamentId = tournaments[0].id;
   const { bracket, error } = await getPublicBracket(username, tournamentId);
+  const rounds = bracket
+    ? await getPublicBracketRounds(username, tournamentId)
+    : null;
 
   if (error || !bracket) {
     return (
@@ -118,12 +125,14 @@ async function PublicBracketContent({ username }: { username: string }) {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between rounded-lg border border-white/5 bg-black/20 px-4 py-3.5">
-                <span className="text-sm font-medium text-zinc-400">Picks Made</span>
-                <span className="text-sm font-semibold text-white">
-                  {bracket.total_picks > 0 ? bracket.total_picks : "None yet"}
-                </span>
-              </div>
+              {!rounds && (
+                <div className="flex items-center justify-between rounded-lg border border-white/5 bg-black/20 px-4 py-3.5">
+                  <span className="text-sm font-medium text-zinc-400">Picks Made</span>
+                  <span className="text-sm font-semibold text-white">
+                    {bracket.total_picks > 0 ? bracket.total_picks : "None yet"}
+                  </span>
+                </div>
+              )}
 
               {bracket.champion_name && (
                 <div className="flex items-center justify-between rounded-lg border border-yellow-400/20 bg-yellow-400/5 px-4 py-3.5">
@@ -153,6 +162,8 @@ async function PublicBracketContent({ username }: { username: string }) {
               )}
             </div>
           </div>
+
+          {rounds && <PublicKnockoutBracket rounds={rounds} />}
 
           <div className="text-center">
             <Link

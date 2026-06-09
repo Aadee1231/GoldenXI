@@ -121,6 +121,7 @@ export type LeaderboardEntry = {
   champion_flag: string | null;
   champion_code: string | null;
   submitted_at: string | null;
+  is_public?: boolean;
   is_eligible?: boolean;
   eligibility_status?: "eligible" | "not_submitted" | "submitted_late" | "edited_after_lock";
 };

@@ -82,6 +82,21 @@ export async function fetchLeaderboard(
       console.error("Error fetching matches:", matchesError);
     }
 
+    // Fetch which users have a public bracket so we can link their rows to the
+    // public bracket page. Profiles' public fields are publicly readable.
+    const userIds = leaderboardData.map((row: { user_id: string }) => row.user_id);
+    const { data: publicProfiles } = await supabase
+      .from("profiles")
+      .select("id, public_bracket")
+      .in("id", userIds);
+
+    const publicByUser = new Map<string, boolean>(
+      (publicProfiles || []).map((p: { id: string; public_bracket: boolean }) => [
+        p.id,
+        p.public_bracket,
+      ])
+    );
+
     // Calculate scores for each bracket
     const entries: LeaderboardEntry[] = leaderboardData.map((row: {
       bracket_id: string;
@@ -116,6 +131,7 @@ export async function fetchLeaderboard(
         champion_flag: row.champion_flag,
         champion_code: row.champion_code,
         submitted_at: row.submitted_at,
+        is_public: publicByUser.get(row.user_id) ?? false,
       };
     });
 

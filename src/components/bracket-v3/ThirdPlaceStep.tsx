@@ -36,7 +36,9 @@ export default function ThirdPlaceStep({
   useEffect(() => {
     onRegisterSave(handleSave);
     onRegisterAutoPick(handleAutoPick);
-  }, [selectedTeamIds, bracketId]);
+    // thirdPlaceTeams is included so auto-pick works from a clean, untouched
+    // state as soon as the eligible third-place teams have loaded.
+  }, [selectedTeamIds, thirdPlaceTeams, bracketId]);
 
   const loadData = async () => {
     setLoading(true);
@@ -115,15 +117,11 @@ export default function ThirdPlaceStep({
 
   const handleAutoPick = () => {
     if (thirdPlaceTeams.length < 8) return;
-    
-    const shuffled = [...thirdPlaceTeams];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    
-    const randomPicks = shuffled.slice(0, 8).map(t => t.id);
-    onChange(randomPicks);
+
+    // Select exactly 8 eligible third-place teams deterministically (by group
+    // order), so auto-pick always produces a valid, reproducible selection.
+    const picks = thirdPlaceTeams.slice(0, 8).map((t) => t.id);
+    onChange(picks);
   };
 
   const canContinue = selectedTeamIds.length === 8;

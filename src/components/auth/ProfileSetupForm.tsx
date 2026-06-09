@@ -16,7 +16,9 @@ export default function ProfileSetupForm({ profile }: Props) {
   const [displayName, setDisplayName] = useState(profile?.display_name || "");
   const [usernameError, setUsernameError] = useState("");
   const [displayNameError, setDisplayNameError] = useState("");
+  const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
 
   const validateUsername = (value: string) => {
@@ -71,6 +73,7 @@ export default function ProfileSetupForm({ profile }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError("");
 
     const usernameValidation = validateUsername(username);
     const displayNameValidation = validateDisplayName(displayName);
@@ -87,26 +90,39 @@ export default function ProfileSetupForm({ profile }: Props) {
 
     setIsSubmitting(true);
 
-    const { success, error } = await updateProfile({
-      username,
-      display_name: displayName.trim(),
-    });
+    try {
+      const { success, error } = await updateProfile({
+        username,
+        display_name: displayName.trim(),
+      });
 
-    if (error) {
-      if (error.includes("username")) {
-        setUsernameError(error);
-      } else if (error.includes("display")) {
-        setDisplayNameError(error);
-      } else {
-        setUsernameError(error);
+      if (error) {
+        if (error.toLowerCase().includes("username")) {
+          setUsernameError(error);
+        } else if (error.toLowerCase().includes("display")) {
+          setDisplayNameError(error);
+        } else {
+          setFormError(error);
+        }
+        setIsSubmitting(false);
+        return;
       }
-      setIsSubmitting(false);
-      return;
-    }
 
-    if (success) {
-      router.push("/bracket");
-      router.refresh();
+      if (success) {
+        // Show a brief success state, then navigate. We use a hard navigation as
+        // a reliable fallback so the button never gets stuck on "Saving...".
+        setIsSaved(true);
+        router.push("/bracket");
+        router.refresh();
+        setTimeout(() => {
+          window.location.assign("/bracket");
+        }, 1200);
+      }
+    } catch (err) {
+      setFormError(
+        err instanceof Error ? err.message : "Something went wrong. Please try again."
+      );
+      setIsSubmitting(false);
     }
   };
 
@@ -173,10 +189,23 @@ export default function ProfileSetupForm({ profile }: Props) {
         </div>
       </div>
 
+      {formError && (
+        <div className="rounded-md border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          {formError}
+        </div>
+      )}
+
+      {isSaved && (
+        <div className="rounded-md border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-400">
+          Profile saved! Taking you to your bracket...
+        </div>
+      )}
+
       <button
         type="submit"
         disabled={
           isSubmitting ||
+          isSaved ||
           isCheckingUsername ||
           !!usernameError ||
           !!displayNameError ||
@@ -185,7 +214,7 @@ export default function ProfileSetupForm({ profile }: Props) {
         }
         className="w-full rounded-md bg-yellow-400 px-4 py-3 font-bold text-black transition-colors hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {isSubmitting ? "Saving..." : "Complete Setup"}
+        {isSaved ? "Saved!" : isSubmitting ? "Saving..." : "Complete Setup"}
       </button>
     </form>
   );

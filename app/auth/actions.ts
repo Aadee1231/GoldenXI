@@ -3,14 +3,27 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/src/lib/supabase/server";
 import { ensureProfile } from "@/src/lib/supabase/queries/profiles";
+import { getSiteUrl } from "@/src/lib/utils/share";
 
 export async function signUp(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
   const redirectTo = formData.get("redirect") as string | null;
 
+  // Send the confirmation email link back through our callback route so the
+  // confirmed user lands on a real page (never `/#?code=...` -> 404). The `next`
+  // param preserves any page the user was trying to reach before signing up.
+  const callbackUrl = new URL("/auth/callback", getSiteUrl());
+  if (redirectTo && redirectTo.startsWith("/")) {
+    callbackUrl.searchParams.set("next", redirectTo);
+  }
+
   const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({ email, password });
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { emailRedirectTo: callbackUrl.toString() },
+  });
 
   if (error) {
     const errorUrl = redirectTo
