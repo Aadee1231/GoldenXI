@@ -54,9 +54,10 @@ const features = [
     icon: ShieldCheck,
     title: "Goalkeeper Reaction",
     description:
-      "Coming soon: test your reflexes in a fast penalty-save challenge.",
-    badge: "Coming Soon",
+      "Test your reflexes in a fast penalty-save challenge. Dive left, center, or right before the ball beats you.",
+    badge: "New",
     color: "red" as const,
+    href: "/goalie",
   },
 ] as const;
 
