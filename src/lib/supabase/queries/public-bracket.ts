@@ -88,11 +88,11 @@ export async function getPublicBracketRounds(
 
     const [groupResult, thirdResult, knockoutResult] = await Promise.all([
       supabase
-        .from("group_picks")
+        .from("bracket_group_picks")
         .select("group_label, team_id, position")
         .eq("bracket_id", bracket.id),
       supabase
-        .from("third_place_picks")
+        .from("bracket_third_place_picks")
         .select("team_id")
         .eq("bracket_id", bracket.id),
       supabase
@@ -244,11 +244,11 @@ export async function getPublicBracketPickCounts(
 
   const [groupCount, thirdCount, knockoutCount] = await Promise.all([
     supabase
-      .from("group_picks")
+      .from("bracket_group_picks")
       .select("id", { count: "exact", head: true })
       .eq("bracket_id", bracket.id),
     supabase
-      .from("third_place_picks")
+      .from("bracket_third_place_picks")
       .select("id", { count: "exact", head: true })
       .eq("bracket_id", bracket.id),
     supabase

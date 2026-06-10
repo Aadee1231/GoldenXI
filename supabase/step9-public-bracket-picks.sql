@@ -64,12 +64,12 @@ BEGIN
         'team_id', gp.team_id,
         'position', gp.position
       ))
-      FROM public.group_picks gp
+      FROM public.bracket_group_picks gp
       WHERE gp.bracket_id = v_bracket_id
     ), '[]'::jsonb) AS group_rankings,
     COALESCE((
       SELECT jsonb_agg(tpp.team_id)
-      FROM public.third_place_picks tpp
+      FROM public.bracket_third_place_picks tpp
       WHERE tpp.bracket_id = v_bracket_id
     ), '[]'::jsonb) AS third_place_picks,
     COALESCE((
