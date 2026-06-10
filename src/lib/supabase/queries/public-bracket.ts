@@ -30,10 +30,10 @@ export async function getPublicBracket(
 }
 
 /**
- * Reconstruct the full knockout bracket for a public user. Requires the
+ * Reconstruct the full knockout bracket for a public user. First tries the
  * optional `get_public_bracket_picks` RPC (see supabase/step9-public-bracket-picks.sql).
- * Returns null (and the page falls back to the summary view) if the RPC is not
- * installed or the bracket can't be reconstructed.
+ * If the RPC is not available, falls back to direct queries. Returns null if
+ * the bracket can't be reconstructed.
  */
 export async function getPublicBracketRounds(
   username: string,
@@ -41,24 +41,76 @@ export async function getPublicBracketRounds(
 ): Promise<ReconstructedRound[] | null> {
   const supabase = await createClient();
 
-  const { data, error } = await supabase.rpc("get_public_bracket_picks", {
+  let groupRankings: GroupRankingInput[] = [];
+  let thirdPlacePicks: string[] = [];
+  let knockoutPicks: Record<string, string | null> = {};
+
+  // Try RPC first (more efficient)
+  const { data: rpcData, error: rpcError } = await supabase.rpc("get_public_bracket_picks", {
     username_param: username,
     tournament_id_param: tournamentId,
   });
 
-  if (error || !data || data.length === 0) {
-    return null;
+  if (!rpcError && rpcData && rpcData.length > 0) {
+    const row = rpcData[0] as {
+      group_rankings: GroupRankingInput[] | null;
+      third_place_picks: string[] | null;
+      knockout_picks: Record<string, string | null> | null;
+    };
+    groupRankings = row.group_rankings || [];
+    thirdPlacePicks = row.third_place_picks || [];
+    knockoutPicks = row.knockout_picks || {};
+  } else {
+    // Fallback: fetch data directly without RPC
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("id, public_bracket")
+      .eq("username", username)
+      .single();
+
+    if (!profile || !profile.public_bracket) {
+      return null;
+    }
+
+    const { data: bracket } = await supabase
+      .from("brackets")
+      .select("id")
+      .eq("user_id", profile.id)
+      .eq("tournament_id", tournamentId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (!bracket) {
+      return null;
+    }
+
+    const [groupResult, thirdResult, knockoutResult] = await Promise.all([
+      supabase
+        .from("group_picks")
+        .select("group_label, team_id, position")
+        .eq("bracket_id", bracket.id),
+      supabase
+        .from("third_place_picks")
+        .select("team_id")
+        .eq("bracket_id", bracket.id),
+      supabase
+        .from("bracket_picks")
+        .select("match_id, picked_team_id")
+        .eq("bracket_id", bracket.id),
+    ]);
+
+    groupRankings = (groupResult.data || []).map((p: any) => ({
+      group_label: p.group_label,
+      team_id: p.team_id,
+      position: p.position,
+    }));
+    thirdPlacePicks = (thirdResult.data || []).map((p: any) => p.team_id);
+    knockoutPicks = (knockoutResult.data || []).reduce((acc: Record<string, string | null>, p: any) => {
+      acc[p.match_id] = p.picked_team_id;
+      return acc;
+    }, {});
   }
-
-  const row = data[0] as {
-    group_rankings: GroupRankingInput[] | null;
-    third_place_picks: string[] | null;
-    knockout_picks: Record<string, string | null> | null;
-  };
-
-  const groupRankings = row.group_rankings || [];
-  const thirdPlacePicks = row.third_place_picks || [];
-  const knockoutPicks = row.knockout_picks || {};
 
   if (groupRankings.length === 0 || thirdPlacePicks.length !== 8) {
     return null;

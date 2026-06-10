@@ -1,5 +1,6 @@
 import { getCurrentUserProfile } from "@/src/lib/supabase/queries/profiles";
 import { getCurrentUserBracket } from "@/src/lib/supabase/queries/groups";
+import { validateBracketComplete } from "@/src/lib/supabase/queries/brackets-client";
 import { createClient } from "@/src/lib/supabase/server";
 import BracketShareCard from "./BracketShareCard";
 
@@ -20,28 +21,9 @@ export default async function BracketShareSection() {
   if (bracket) {
     const supabase = await createClient();
 
-    // Completion is based on the actual picks (48 group + 8 third-place + 31
-    // knockout), NOT the submitted/locked status — a bracket can be fully
-    // complete without being locked.
-    const [groupCount, thirdCount, knockoutCount] = await Promise.all([
-      supabase
-        .from("group_picks")
-        .select("id", { count: "exact", head: true })
-        .eq("bracket_id", bracket.id),
-      supabase
-        .from("third_place_picks")
-        .select("id", { count: "exact", head: true })
-        .eq("bracket_id", bracket.id),
-      supabase
-        .from("bracket_picks")
-        .select("id", { count: "exact", head: true })
-        .eq("bracket_id", bracket.id),
-    ]);
-
-    bracketComplete =
-      (groupCount.count ?? 0) === 48 &&
-      (thirdCount.count ?? 0) === 8 &&
-      (knockoutCount.count ?? 0) === 31;
+    // Use the same validation logic as Review & Lock section
+    const validationResult = await validateBracketComplete(bracket.id);
+    bracketComplete = validationResult.valid;
 
     // Champion = the team picked in the final match.
     const { data: finalMatch } = await supabase
