@@ -123,14 +123,13 @@ export default function BracketShareCard({
         {!bracketComplete ? (
           <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-4 py-3">
             <p className="text-xs text-yellow-400">
-              Your bracket is incomplete. Complete all picks for the best sharing experience.
+              Complete all picks (48 group rankings + 8 third-place + 31 knockout) for the best sharing experience.
             </p>
           </div>
         ) : !isLocked ? (
-          <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-4 py-3">
-            <p className="text-xs text-yellow-400">
-              Your bracket is complete. Lock it to finalize your picks and enable the best
-              sharing experience.
+          <div className="rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3">
+            <p className="text-xs text-green-400">
+              Your bracket is complete and ready to share! Lock it to finalize your picks.
             </p>
           </div>
         ) : (
