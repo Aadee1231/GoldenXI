@@ -5,7 +5,6 @@ import { Trophy, Lock, CheckCircle, XCircle } from "lucide-react";
 import {
   getPublicBracket,
   getPublicBracketRounds,
-  getPublicBracketPickCounts,
 } from "@/src/lib/supabase/queries/public-bracket";
 import { createClient } from "@/src/lib/supabase/server";
 import ShareCard from "@/src/components/share/ShareCard";
@@ -43,9 +42,6 @@ async function PublicBracketContent({ username }: { username: string }) {
   const { bracket, error } = await getPublicBracket(username, tournamentId);
   const rounds = bracket
     ? await getPublicBracketRounds(username, tournamentId)
-    : null;
-  const pickCounts = bracket
-    ? await getPublicBracketPickCounts(username, tournamentId)
     : null;
 
   if (error || !bracket) {
@@ -128,29 +124,6 @@ async function PublicBracketContent({ username }: { username: string }) {
                   )}
                 </div>
               </div>
-
-              {pickCounts && (
-                <>
-                  <div className="flex items-center justify-between rounded-lg border border-white/5 bg-black/20 px-4 py-3.5">
-                    <span className="text-sm font-medium text-zinc-400">Group Rankings</span>
-                    <span className={`text-sm font-semibold ${pickCounts.groupPicks === 48 ? 'text-green-400' : 'text-white'}`}>
-                      {pickCounts.groupPicks} / 48
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg border border-white/5 bg-black/20 px-4 py-3.5">
-                    <span className="text-sm font-medium text-zinc-400">Third-Place Picks</span>
-                    <span className={`text-sm font-semibold ${pickCounts.thirdPlacePicks === 8 ? 'text-green-400' : 'text-white'}`}>
-                      {pickCounts.thirdPlacePicks} / 8
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg border border-white/5 bg-black/20 px-4 py-3.5">
-                    <span className="text-sm font-medium text-zinc-400">Knockout Picks</span>
-                    <span className={`text-sm font-semibold ${pickCounts.knockoutPicks === 31 ? 'text-green-400' : 'text-white'}`}>
-                      {pickCounts.knockoutPicks} / 31
-                    </span>
-                  </div>
-                </>
-              )}
 
               {bracket.champion_name && (
                 <div className="flex items-center justify-between rounded-lg border border-yellow-400/20 bg-yellow-400/5 px-4 py-3.5">
