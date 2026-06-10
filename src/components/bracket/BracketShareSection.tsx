@@ -74,7 +74,7 @@ export default async function BracketShareSection() {
     }
   }
 
-  return (
+  return ( 
     <div className="mt-8">
       <BracketShareCard
         username={profile.username}
