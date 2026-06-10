@@ -1,3 +1,8 @@
+"use client";
+
+import { useState } from "react";
+import { resolveFlagCode, flagImageUrl, flagBadgeText } from "@/src/lib/flags";
+
 type TeamFlagProps = {
   name: string;
   code: string;
@@ -7,42 +12,18 @@ type TeamFlagProps = {
   className?: string;
 };
 
-const FLAG_SIZE_MAP = {
-  sm: "text-lg",
-  md: "text-2xl",
-  lg: "text-3xl",
-  xl: "text-6xl",
+// Bigger, clearer, consistent flag rendering. Sizes are real pixel boxes so
+// flags read the same everywhere (group stage, knockout, review, leaderboard,
+// share pages) regardless of platform emoji support.
+const SIZE_MAP: Record<
+  NonNullable<TeamFlagProps["size"]>,
+  { box: string; badge: string }
+> = {
+  sm: { box: "h-4 w-6", badge: "text-[8px]" },
+  md: { box: "h-6 w-9", badge: "text-[10px]" },
+  lg: { box: "h-8 w-12", badge: "text-xs" },
+  xl: { box: "h-12 w-[4.5rem]", badge: "text-sm" },
 };
-
-function getFlagEmoji(flag_code: string | null | undefined): string {
-  if (!flag_code) return "🏴";
-
-  if (flag_code === "GB-ENG") {
-    return "🏴󠁧󠁢󠁥󠁮󠁧󠁿";
-  }
-  
-  if (flag_code === "GB-SCT") {
-    return "🏴󠁧󠁢󠁳󠁣󠁴󠁿";
-  }
-
-  if (flag_code.length === 2) {
-    const codePoints = flag_code
-      .toUpperCase()
-      .split("")
-      .map((char) => 127397 + char.charCodeAt(0));
-    return String.fromCodePoint(...codePoints);
-  }
-
-  return "🏴";
-}
-
-function isValidEmoji(emoji: string | null | undefined): boolean {
-  if (!emoji) return false;
-  if (emoji === "🏴") return true;
-  if (emoji.includes("�")) return false;
-  if (emoji.length === 0) return false;
-  return true;
-}
 
 export default function TeamFlag({
   name,
@@ -52,21 +33,33 @@ export default function TeamFlag({
   size = "md",
   className = "",
 }: TeamFlagProps) {
-  let displayFlag = "🏴";
+  const [imgError, setImgError] = useState(false);
+  const resolved = resolveFlagCode(flag_code, code);
+  const sizing = SIZE_MAP[size];
 
-  if (isValidEmoji(flag_emoji)) {
-    displayFlag = flag_emoji!;
-  } else if (flag_code) {
-    displayFlag = getFlagEmoji(flag_code);
+  // Primary: a real flag image (reliable cross-platform, no tofu/mojibake).
+  if (resolved && !imgError) {
+    return (
+      <img
+        // eslint-disable-next-line @next/next/no-img-element
+        src={flagImageUrl(resolved)}
+        alt={`${name} flag`}
+        title={`${name} (${code})`}
+        loading="lazy"
+        onError={() => setImgError(true)}
+        className={`${sizing.box} shrink-0 rounded-[3px] object-cover shadow-sm ring-1 ring-black/20 ${className}`}
+      />
+    );
   }
 
+  // Fallback: clean country-code badge (never a broken image / gray box).
   return (
     <span
-      className={`${FLAG_SIZE_MAP[size]} ${className}`}
       title={`${name} (${code})`}
       aria-label={`${name} flag`}
+      className={`${sizing.box} ${sizing.badge} inline-flex shrink-0 items-center justify-center rounded-[3px] bg-zinc-700 font-bold uppercase tracking-tight text-zinc-200 ring-1 ring-black/20 ${className}`}
     >
-      {displayFlag}
+      {flagBadgeText(code, flag_code)}
     </span>
   );
 }

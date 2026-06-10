@@ -1,0 +1,81 @@
+<!--
+  GoldenXI — Supabase "Confirm signup" email template.
+
+  HOW TO USE:
+  1. Supabase Dashboard -> Authentication -> Emails -> "Confirm signup".
+  2. Set the Subject to:  Confirm your GoldenXI account
+  3. Paste the HTML below into the message body and Save.
+
+  Notes:
+  - Uses Supabase's {{ .ConfirmationURL }} variable, which now routes through
+    /auth/callback (see app/auth/callback/route.ts) so confirmed users land on a
+    real page instead of /#?code=... (404).
+  - Inline styles only (email clients ignore <style> blocks / external CSS).
+  - No FIFA/official assets — GoldenXI branding only.
+-->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#080808;margin:0;padding:32px 0;font-family:Arial,Helvetica,sans-serif;">
+  <tr>
+    <td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background-color:#0f0f0f;border:1px solid #1f1f1f;border-radius:16px;overflow:hidden;">
+        <!-- Header -->
+        <tr>
+          <td align="center" style="padding:36px 32px 8px 32px;">
+            <div style="font-size:30px;font-weight:800;letter-spacing:-0.5px;color:#ffffff;">
+              Golden<span style="color:#facc15;">XI</span>
+            </div>
+            <div style="margin-top:6px;font-size:12px;color:#71717a;letter-spacing:1px;text-transform:uppercase;">
+              World Cup 2026 Bracket Challenge
+            </div>
+          </td>
+        </tr>
+        <!-- Body -->
+        <tr>
+          <td style="padding:24px 32px 8px 32px;">
+            <h1 style="margin:0 0 12px 0;font-size:22px;font-weight:700;color:#ffffff;">
+              Confirm your account
+            </h1>
+            <p style="margin:0 0 24px 0;font-size:15px;line-height:1.6;color:#d4d4d8;">
+              Welcome to GoldenXI! You're one click away from building your World Cup 2026 bracket,
+              competing with friends, and climbing the leaderboard. Confirm your email to get started.
+            </p>
+          </td>
+        </tr>
+        <!-- Button -->
+        <tr>
+          <td align="center" style="padding:8px 32px 28px 32px;">
+            <a href="{{ .ConfirmationURL }}"
+               style="display:inline-block;background-color:#facc15;color:#000000;font-size:16px;font-weight:700;text-decoration:none;padding:14px 36px;border-radius:10px;">
+              Confirm my account
+            </a>
+          </td>
+        </tr>
+        <!-- Fallback link -->
+        <tr>
+          <td style="padding:0 32px 28px 32px;">
+            <p style="margin:0 0 6px 0;font-size:12px;color:#71717a;">
+              If the button doesn't work, copy and paste this link into your browser:
+            </p>
+            <p style="margin:0;font-size:12px;word-break:break-all;">
+              <a href="{{ .ConfirmationURL }}" style="color:#facc15;">{{ .ConfirmationURL }}</a>
+            </p>
+          </td>
+        </tr>
+        <!-- Divider -->
+        <tr><td style="padding:0 32px;"><div style="height:1px;background-color:#1f1f1f;"></div></td></tr>
+        <!-- Footer / disclaimer -->
+        <tr>
+          <td style="padding:20px 32px 32px 32px;">
+            <p style="margin:0 0 8px 0;font-size:11px;line-height:1.5;color:#52525b;">
+              If you didn't create a GoldenXI account, you can safely ignore this email.
+            </p>
+            <p style="margin:0;font-size:11px;line-height:1.5;color:#52525b;">
+              GoldenXI is an independent, fan-made game. It is not affiliated with, endorsed by,
+              sponsored by, or officially connected to FIFA, the FIFA World Cup, or any tournament
+              organizer. All country names and flags are used for identification purposes only.
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>

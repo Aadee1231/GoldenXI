@@ -55,7 +55,9 @@ export default function KnockoutBracketStep({
   useEffect(() => {
     onRegisterSave(handleSave);
     onRegisterAutoPick(handleAutoPick);
-  }, [picks, bracketId]);
+    // matches & currentRound are included so auto-pick targets the round the
+    // user is viewing and works as soon as matchups are built (clean state).
+  }, [picks, matches, currentRound, bracketId]);
 
   useEffect(() => {
     rebuildMatches();

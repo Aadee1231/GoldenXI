@@ -184,7 +184,9 @@ export default function GroupStageStep({ rankings, onChange, onRegisterSave, onR
   useEffect(() => {
     onRegisterSave(handleSave);
     onRegisterAutoPick(handleAutoPick);
-  }, [rankedTeamsByGroup, bracketId]);
+    // teamsByGroup is included so auto-pick works from a clean state as soon as
+    // teams have loaded (before any manual reordering).
+  }, [rankedTeamsByGroup, teamsByGroup, bracketId]);
 
   const loadData = async () => {
     setLoading(true);

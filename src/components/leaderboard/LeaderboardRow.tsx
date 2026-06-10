@@ -1,4 +1,7 @@
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import type { LeaderboardEntry } from "@/src/types";
+import TeamFlag from "@/src/components/ui/TeamFlag";
 
 type Props = {
   entry: LeaderboardEntry;
@@ -19,16 +22,11 @@ export default function LeaderboardRow({ entry }: Props) {
   const displayName = entry.display_name || entry.username || "Unknown Player";
   const initial = displayName.slice(0, 1).toUpperCase();
   const isTop3 = entry.rank <= 3;
+  // Only link to a public bracket page when the user has one shared publicly.
+  const isLinkable = Boolean(entry.is_public && entry.username);
 
-  return (
-    <div
-      className={[
-        "group flex items-center gap-4 rounded-xl border px-5 py-4 transition-all",
-        isTop3
-          ? "border-yellow-400/30 bg-yellow-400/5 hover:bg-yellow-400/10"
-          : "border-white/8 bg-white/[0.03] hover:border-white/15 hover:bg-white/[0.06]",
-      ].join(" ")}
-    >
+  const content = (
+    <>
       {/* Rank */}
       <div className="w-8 shrink-0 text-center">
         {MEDAL[entry.rank] ? (
@@ -64,6 +62,11 @@ export default function LeaderboardRow({ entry }: Props) {
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold text-white">
           {displayName}
+          {isLinkable && (
+            <span className="ml-1.5 text-xs font-normal text-yellow-400/70 group-hover:text-yellow-400">
+              View bracket
+            </span>
+          )}
         </p>
         <p className="truncate text-xs text-zinc-500">{entry.bracket_name}</p>
       </div>
@@ -71,8 +74,14 @@ export default function LeaderboardRow({ entry }: Props) {
       {/* Champion pick */}
       <div className="hidden min-w-[110px] sm:block">
         {entry.champion_name ? (
-          <div className="flex items-center gap-1.5">
-            <span className="text-base">{entry.champion_flag}</span>
+          <div className="flex items-center gap-2">
+            <TeamFlag
+              name={entry.champion_name}
+              code={entry.champion_code || ""}
+              flag_emoji={entry.champion_flag}
+              flag_code={entry.champion_code}
+              size="sm"
+            />
             <span className="text-xs font-medium text-zinc-300">
               {entry.champion_name}
             </span>
@@ -101,6 +110,31 @@ export default function LeaderboardRow({ entry }: Props) {
       <div className="hidden w-16 shrink-0 text-right lg:block">
         <p className="text-xs text-zinc-600">{timeAgo(entry.submitted_at)}</p>
       </div>
-    </div>
+
+      {/* Chevron affordance for linkable rows */}
+      {isLinkable && (
+        <ChevronRight className="hidden h-4 w-4 shrink-0 text-zinc-600 transition-colors group-hover:text-yellow-400 sm:block" />
+      )}
+    </>
   );
+
+  const baseClass = [
+    "group flex items-center gap-4 rounded-xl border px-5 py-4 transition-all",
+    isTop3
+      ? "border-yellow-400/30 bg-yellow-400/5 hover:bg-yellow-400/10"
+      : "border-white/8 bg-white/[0.03] hover:border-white/15 hover:bg-white/[0.06]",
+  ].join(" ");
+
+  if (isLinkable) {
+    return (
+      <Link
+        href={`/u/${entry.username}/bracket`}
+        className={`${baseClass} cursor-pointer hover:border-yellow-400/40 hover:ring-1 hover:ring-yellow-400/20`}
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return <div className={baseClass}>{content}</div>;
 }

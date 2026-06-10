@@ -187,17 +187,30 @@ export async function updateProfile(updates: {
     updates.display_name = displayName;
   }
 
-  // Update profile
-  const { error: updateError } = await supabase
+  // Update profile. Use `.select()` so we can detect the case where no row was
+  // updated (e.g. the auto-create trigger never ran) and fall back to an insert,
+  // otherwise the save would silently succeed without persisting anything.
+  const { data: updated, error: updateError } = await supabase
     .from("profiles")
     .update({
       ...updates,
       updated_at: new Date().toISOString(),
     })
-    .eq("id", user.id);
+    .eq("id", user.id)
+    .select("id");
 
   if (updateError) {
     return { success: false, error: updateError.message };
+  }
+
+  if (!updated || updated.length === 0) {
+    const { error: insertError } = await supabase
+      .from("profiles")
+      .insert({ id: user.id, ...updates });
+
+    if (insertError) {
+      return { success: false, error: insertError.message };
+    }
   }
 
   return { success: true, error: null };

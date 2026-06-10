@@ -13,8 +13,10 @@ interface BracketShareCardProps {
   displayName: string | null;
   championName?: string | null;
   championFlag?: string | null;
+  championCode?: string | null;
   totalScore?: number;
   bracketComplete: boolean;
+  isLocked?: boolean;
 }
 
 export default function BracketShareCard({
@@ -22,8 +24,10 @@ export default function BracketShareCard({
   displayName,
   championName,
   championFlag,
+  championCode,
   totalScore,
   bracketComplete,
+  isLocked = false,
 }: BracketShareCardProps) {
   const [publicBracket, setPublicBracket] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -116,10 +120,23 @@ export default function BracketShareCard({
           </button>
         </div>
 
-        {!bracketComplete && (
+        {!bracketComplete ? (
           <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-4 py-3">
             <p className="text-xs text-yellow-400">
               Your bracket is incomplete. Complete all picks for the best sharing experience.
+            </p>
+          </div>
+        ) : !isLocked ? (
+          <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-4 py-3">
+            <p className="text-xs text-yellow-400">
+              Your bracket is complete. Lock it to finalize your picks and enable the best
+              sharing experience.
+            </p>
+          </div>
+        ) : (
+          <div className="rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3">
+            <p className="text-xs text-green-400">
+              Your bracket is complete and locked. Share it with friends!
             </p>
           </div>
         )}
@@ -132,6 +149,7 @@ export default function BracketShareCard({
                 displayName={displayName}
                 championName={championName}
                 championFlag={championFlag}
+                championCode={championCode}
                 totalScore={totalScore}
                 variant="bracket"
               />

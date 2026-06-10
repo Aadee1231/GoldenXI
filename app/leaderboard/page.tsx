@@ -2,6 +2,7 @@ import { Trophy, Flame } from "lucide-react";
 import { fetchLeaderboard } from "@/src/lib/supabase/queries/leaderboard";
 import LeaderboardRow from "@/src/components/leaderboard/LeaderboardRow";
 import LeaderboardEmpty from "@/src/components/leaderboard/LeaderboardEmpty";
+import TeamFlag from "@/src/components/ui/TeamFlag";
 
 export const metadata = {
   title: "Leaderboard | GoldenXI",
@@ -64,8 +65,14 @@ export default async function LeaderboardPage() {
                   <p className="max-w-full truncate text-xs font-bold text-white">
                     {entry.username}
                   </p>
-                  {entry.champion_flag && (
-                    <span className="text-lg">{entry.champion_flag}</span>
+                  {entry.champion_name && (
+                    <TeamFlag
+                      name={entry.champion_name}
+                      code={entry.champion_code || ""}
+                      flag_emoji={entry.champion_flag}
+                      flag_code={entry.champion_code}
+                      size="md"
+                    />
                   )}
                   <p
                     className={[
