@@ -3,27 +3,15 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/src/lib/supabase/server";
 import { ensureProfile } from "@/src/lib/supabase/queries/profiles";
-import { getSiteUrl } from "@/src/lib/utils/share";
 
 export async function signUp(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
   const redirectTo = formData.get("redirect") as string | null;
-
-  // Send the confirmation email link back through our callback route so the
-  // confirmed user lands on a real page (never `/#?code=...` -> 404). The `next`
-  // param preserves any page the user was trying to reach before signing up.
-  const callbackUrl = new URL("/auth/callback", getSiteUrl());
-  if (redirectTo && redirectTo.startsWith("/")) {
-    callbackUrl.searchParams.set("next", redirectTo);
-  }
+  const destination = redirectTo && redirectTo.startsWith("/") ? redirectTo : "/bracket";
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: { emailRedirectTo: callbackUrl.toString() },
-  });
+  const { data, error } = await supabase.auth.signUp({ email, password });
 
   if (error) {
     const errorUrl = redirectTo
@@ -32,10 +20,25 @@ export async function signUp(formData: FormData) {
     return redirect(errorUrl);
   }
 
-  const messageUrl = redirectTo
-    ? `/auth?message=Check+your+email+to+confirm+your+account&tab=signup&redirect=${encodeURIComponent(redirectTo)}`
-    : "/auth?message=Check+your+email+to+confirm+your+account&tab=signup";
-  return redirect(messageUrl);
+  if (data.session) {
+    await ensureProfile();
+    return redirect(destination);
+  }
+
+  // Fallback: email confirmation may still be on for this account — try signing in
+  const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (!loginError && loginData.session) {
+    await ensureProfile();
+    return redirect(destination);
+  }
+
+  return redirect(
+    `/auth?error=${encodeURIComponent("Account created but automatic sign-in failed. Please log in.")}&tab=login`
+  );
 }
 
 export async function signIn(formData: FormData) {
