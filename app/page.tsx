@@ -24,7 +24,6 @@ import {
   PitchGrassPattern,
   SoccerBallPattern,
   StadiumFloodlightGlow,
-  PitchGreenGlow,
 } from "@/src/components/ui/SoccerPitchBackground";
 
 const features = [
@@ -75,7 +74,6 @@ export default function HomePage() {
         {/* Background layers - soccer pitch atmosphere */}
         <PitchGrassPattern />
         <SoccerPitchOverlay />
-        <PitchGreenGlow />
         <StadiumFloodlightGlow />
         <TournamentColorBeams />
         <GoldSpotlight />
