@@ -70,3 +70,133 @@ body {
     animation: none;
   }
 }
+
+/* ── Goalkeeper Mini-Game ─────────────────────────────────────── */
+@keyframes goalie-net-shake {
+  0%,100% { transform: translateX(0) skewX(0deg); }
+  15%     { transform: translateX(-8px) skewX(-2deg); }
+  30%     { transform: translateX(7px)  skewX(1.8deg); }
+  50%     { transform: translateX(-5px) skewX(-1deg); }
+  70%     { transform: translateX(4px)  skewX(0.8deg); }
+  85%     { transform: translateX(-2px) skewX(-0.4deg); }
+}
+
+@keyframes goalie-goal-flash {
+  0%   { opacity: 0; }
+  12%  { opacity: 0.55; }
+  100% { opacity: 0; }
+}
+
+@keyframes goalie-save-flash {
+  0%   { opacity: 0; }
+  12%  { opacity: 0.42; }
+  100% { opacity: 0; }
+}
+
+@keyframes goalie-ball-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes goalie-pop {
+  0%   { transform: scale(0.3) translateY(8px);  opacity: 0; }
+  60%  { transform: scale(1.2) translateY(-3px); opacity: 1; }
+  100% { transform: scale(1)   translateY(0);    opacity: 1; }
+}
+
+@keyframes goalie-count {
+  0%   { transform: scale(0.2); opacity: 0; }
+  40%  { transform: scale(1.1); opacity: 1; }
+  80%  { transform: scale(1);   opacity: 1; }
+  100% { transform: scale(0.85); opacity: 0; }
+}
+
+@keyframes goalie-streak {
+  0%   { transform: translateY(12px) scale(0.5) rotate(-8deg); opacity: 0; }
+  55%  { transform: translateY(-4px)  scale(1.2) rotate(3deg);  opacity: 1; }
+  100% { transform: translateY(0)     scale(1)   rotate(0deg);  opacity: 1; }
+}
+
+@keyframes goalie-stat-reveal {
+  0%   { transform: translateY(16px); opacity: 0; }
+  100% { transform: translateY(0);    opacity: 1; }
+}
+
+@keyframes goalie-impact-burst {
+  0%   { transform: translate(-50%, -50%) scale(0.3); opacity: 0.95; }
+  100% { transform: translate(-50%, -50%) scale(3.2); opacity: 0;    }
+}
+
+/* Score HUD: number "pops" on each point increase */
+@keyframes goalie-score-pop {
+  0%   { transform: scale(1);    color: #facc15; }
+  35%  { transform: scale(1.32); color: #fde047; }
+  100% { transform: scale(1);    color: #facc15; }
+}
+
+/* Lives: heart "drops" when a life is lost */
+@keyframes goalie-life-lost {
+  0%   { transform: scale(1.3);  opacity: 1; }
+  60%  { transform: scale(0.65); opacity: 0.5; }
+  100% { transform: scale(1);    opacity: 1; }
+}
+
+/* New-best badge pulse */
+@keyframes goalie-new-best {
+  0%,100% { box-shadow: 0 0 0 0 rgba(250,204,21,0); }
+  50%     { box-shadow: 0 0 0 6px rgba(250,204,21,0.35); }
+}
+
+/* Target zone pulse during runup */
+@keyframes goalie-target-pulse {
+  0%,100% { opacity: 0.18; }
+  50%     { opacity: 0.55; }
+}
+
+/* Game-over card entrance */
+@keyframes goalie-card-in {
+  0%   { transform: translateY(24px) scale(0.95); opacity: 0; }
+  100% { transform: translateY(0)    scale(1);    opacity: 1; }
+}
+
+/* Save/goal text ripple (inner ring) */
+@keyframes goalie-ring-out {
+  0%   { transform: translate(-50%,-50%) scale(0.5); opacity: 0.7; }
+  100% { transform: translate(-50%,-50%) scale(2.8); opacity: 0;   }
+}
+
+.goalie-impact-burst  { animation: goalie-impact-burst  0.55s ease-out  forwards; }
+.goalie-net-shake     { animation: goalie-net-shake     0.42s ease-in-out; }
+.goalie-goal-flash    { animation: goalie-goal-flash    0.9s  ease-out    forwards; }
+.goalie-save-flash    { animation: goalie-save-flash    0.9s  ease-out    forwards; }
+.goalie-ball-spin     { animation: goalie-ball-spin     0.42s linear       infinite; }
+.goalie-pop           { animation: goalie-pop           0.4s  cubic-bezier(0.34,1.56,0.64,1) forwards; }
+.goalie-count         { animation: goalie-count         0.72s ease-in-out  forwards; }
+.goalie-streak        { animation: goalie-streak        0.5s  cubic-bezier(0.34,1.56,0.64,1) forwards; }
+.goalie-stat-reveal   { animation: goalie-stat-reveal   0.45s ease-out     forwards; }
+.goalie-score-pop     { animation: goalie-score-pop     0.38s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+.goalie-life-lost     { animation: goalie-life-lost     0.42s ease-in-out  forwards; }
+.goalie-new-best      { animation: goalie-new-best      1.4s  ease-in-out  infinite; }
+.goalie-target-pulse  { animation: goalie-target-pulse  0.7s  ease-in-out  infinite; }
+.goalie-card-in       { animation: goalie-card-in       0.42s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+.goalie-ring-out      { animation: goalie-ring-out      0.65s ease-out     forwards; }
+
+/* ── Curved-shot ball arc (stages 4-5, visual only — save logic unchanged) ── */
+@keyframes goalie-ball-arc-l {
+  0%   { transform: translateX(0); }
+  45%  { transform: translateX(-32px); }
+  100% { transform: translateX(0); }
+}
+@keyframes goalie-ball-arc-r {
+  0%   { transform: translateX(0); }
+  45%  { transform: translateX(32px); }
+  100% { transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .goalie-net-shake, .goalie-goal-flash, .goalie-save-flash,
+  .goalie-ball-spin, .goalie-pop, .goalie-count, .goalie-streak,
+  .goalie-stat-reveal, .goalie-score-pop, .goalie-life-lost,
+  .goalie-new-best, .goalie-target-pulse, .goalie-card-in,
+  .goalie-ring-out, .goalie-impact-burst { animation: none; }
+}

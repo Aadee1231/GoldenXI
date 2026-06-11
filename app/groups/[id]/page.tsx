@@ -1,19 +1,23 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { ArrowLeft, Users, Crown, Trophy, CheckCircle, XCircle, Edit, Settings } from "lucide-react";
+import { ArrowLeft, Users, Crown, Trophy, CheckCircle, XCircle, Edit, Settings, Shield } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/src/lib/supabase/server";
 import { getGroupById, getGroupMembersWithBrackets, getCurrentUserBracket } from "@/src/lib/supabase/queries/groups";
 import { fetchGroupLeaderboard } from "@/src/lib/supabase/queries/leaderboard";
+import { fetchGroupGoalieLeaderboard } from "@/src/lib/supabase/queries/goalie-leaderboard";
 import GroupLeaderboard from "@/src/components/groups/GroupLeaderboard";
+import GoalieGroupLeaderboard from "@/src/components/groups/GoalieGroupLeaderboard";
+import GroupStandingsTabs from "@/src/components/groups/GroupStandingsTabs";
 import GroupInviteCard from "@/src/components/groups/GroupInviteCard";
 import CopyJoinCodeButton from "./CopyJoinCodeButton";
 
 interface GroupDetailPageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ standings?: string }>;
 }
 
-async function GroupDetailContent({ groupId }: { groupId: string }) {
+async function GroupDetailContent({ groupId, standingsTab }: { groupId: string; standingsTab: "bracket" | "goalie" }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -21,11 +25,12 @@ async function GroupDetailContent({ groupId }: { groupId: string }) {
     redirect(`/auth?redirect=/groups/${groupId}`);
   }
 
-  // Fetch group, members with brackets, current user's bracket, and group leaderboard
+  // Fetch group, members with brackets, current user's bracket, and leaderboards
   const { group, error: groupError } = await getGroupById(groupId);
   const { members, error: membersError } = await getGroupMembersWithBrackets(groupId);
   const { bracket: userBracket, error: bracketError } = await getCurrentUserBracket();
   const { data: leaderboardEntries, error: leaderboardError } = await fetchGroupLeaderboard(groupId);
+  const { data: goalieEntries, error: goalieError } = await fetchGroupGoalieLeaderboard(groupId);
 
   // Debug: Show error if group fetch failed
   if (groupError || !group) {
@@ -201,16 +206,31 @@ async function GroupDetailContent({ groupId }: { groupId: string }) {
         )}
       </div>
 
-      {/* Group Leaderboard */}
+      {/* Group Standings (Bracket + Goalie tabs) */}
       <div className="rounded-xl border border-white/10 bg-white/5 p-5">
         <h3 className="mb-4 flex items-center gap-2 font-semibold text-white">
-          <Trophy className="h-5 w-5 text-yellow-400" />
-          Group Leaderboard
+          {standingsTab === "goalie"
+            ? <Shield className="h-5 w-5 text-yellow-400" />
+            : <Trophy className="h-5 w-5 text-yellow-400" />}
+          Group Standings
         </h3>
-        {leaderboardError ? (
-          <p className="text-sm text-red-400">Error loading leaderboard: {leaderboardError}</p>
-        ) : (
-          <GroupLeaderboard entries={leaderboardEntries} currentUserId={user.id} />
+
+        <GroupStandingsTabs activeTab={standingsTab} groupId={groupId} />
+
+        {standingsTab === "bracket" && (
+          leaderboardError ? (
+            <p className="text-sm text-red-400">Error loading leaderboard: {leaderboardError}</p>
+          ) : (
+            <GroupLeaderboard entries={leaderboardEntries} currentUserId={user.id} />
+          )
+        )}
+
+        {standingsTab === "goalie" && (
+          goalieError ? (
+            <p className="text-sm text-red-400">Error loading goalie standings: {goalieError}</p>
+          ) : (
+            <GoalieGroupLeaderboard entries={goalieEntries} currentUserId={user.id} />
+          )
         )}
       </div>
     </div>
@@ -227,8 +247,10 @@ function GroupDetailSkeleton() {
   );
 }
 
-export default async function GroupDetailPage({ params }: GroupDetailPageProps) {
+export default async function GroupDetailPage({ params, searchParams }: GroupDetailPageProps) {
   const { id } = await params;
+  const { standings = "bracket" } = await searchParams;
+  const standingsTab: "bracket" | "goalie" = standings === "goalie" ? "goalie" : "bracket";
 
   return (
     <div className="min-h-screen bg-[#080808] py-20">
@@ -243,7 +265,7 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
         </Link>
 
         <Suspense fallback={<GroupDetailSkeleton />}>
-          <GroupDetailContent groupId={id} />
+          <GroupDetailContent groupId={id} standingsTab={standingsTab} />
         </Suspense>
       </div>
     </div>

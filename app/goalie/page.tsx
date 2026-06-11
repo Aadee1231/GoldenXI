@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
-import GoalieGame from "@/src/components/goalie/GoalieGame";
+import GoalieModeGate from "@/src/components/goalie/GoalieModeGate";
 
 export const metadata: Metadata = {
   title: "Goalkeeper Reaction — GoldenXI",
@@ -20,17 +18,7 @@ export default function GoaliePage() {
         <div className="absolute bottom-0 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-red-500/5 blur-3xl" />
       </div>
 
-      <div className="relative z-10 mx-auto flex max-w-3xl flex-col items-center">
-        <div className="mb-6 w-full max-w-2xl">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-zinc-400 transition-colors hover:text-yellow-400"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to GoldenXI
-          </Link>
-        </div>
-
+      <div className="relative z-10 mx-auto flex max-w-7xl flex-col items-center">
         <div className="mb-8 text-center">
           <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-red-400/30 bg-red-400/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-red-300 ring-1 ring-red-400/20">
             Reflex Mini-Game
@@ -46,7 +34,7 @@ export default function GoaliePage() {
           </p>
         </div>
 
-        <GoalieGame />
+        <GoalieModeGate />
       </div>
     </div>
   );

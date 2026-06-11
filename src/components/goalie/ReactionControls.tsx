@@ -1,3 +1,5 @@
+"use client";
+
 import { ArrowLeft, ArrowRight, Shield } from "lucide-react";
 import type { Direction } from "./types";
 
@@ -54,6 +56,10 @@ export default function ReactionControls({
             key={dir}
             type="button"
             onClick={() => onSelect(dir)}
+            onTouchStart={(e) => {
+              e.preventDefault();
+              if (!disabled) onSelect(dir);
+            }}
             disabled={disabled}
             aria-label={`Dive ${label}`}
             className={[
@@ -63,7 +69,7 @@ export default function ReactionControls({
               accent,
             ].join(" ")}
           >
-            <Icon className="h-6 w-6 sm:h-7 sm:w-7" />
+            <Icon className={["h-6 w-6 sm:h-7 sm:w-7", isPicked ? "goalie-pop" : ""].join(" ")} />
             <span className="text-sm sm:text-base">{label}</span>
             <span className="rounded-full bg-black/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
               {hint}
