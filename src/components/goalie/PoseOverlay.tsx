@@ -7,11 +7,13 @@ import {
   SHOT_ZONE_LABELS,
   ZONE_FORGIVENESS,
   GLOVE_RADIUS_NORM,
+  TARGET_POCKET_CENTERS,
   getZoneFromPoint,
   computeVideoTransform,
   landmarkToContainerPx,
   type ShotZone,
   type HandPalmData,
+  type PocketSize,
 } from "@/src/lib/goalie/geometry";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -55,10 +57,15 @@ const ZONE_SHORT_LABEL: Record<ShotZone, string> = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 type CameraInput = {
-  leftZone:   ShotZone | null;
-  rightZone:  ShotZone | null;
-  leftPoint:  { x: number; y: number } | null;
-  rightPoint: { x: number; y: number } | null;
+  leftZone:          ShotZone | null;
+  rightZone:         ShotZone | null;
+  leftPoint:         { x: number; y: number } | null;
+  rightPoint:        { x: number; y: number } | null;
+  leftInPocket:      boolean;
+  rightInPocket:     boolean;
+  leftEnteredPocket: boolean;
+  rightEnteredPocket:boolean;
+  pocketSize:        PocketSize | null;
 };
 
 type Props = {
@@ -73,6 +80,8 @@ type Props = {
   showDebug?: boolean;
   /** Exact same hand zones used for scoring — debug panel reads from here for parity. */
   latestInputRef?: RefObject<CameraInput | null>;
+  /** Active target pocket size (normalised). Passed so the canvas pocket matches scoring exactly. */
+  pocketSize?: PocketSize;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -89,20 +98,23 @@ export default function PoseOverlay({
   videoRef,
   showDebug,
   latestInputRef,
+  pocketSize,
 }: Props) {
   const debug = showDebug ?? SHOW_DEBUG;
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Keep refs for values read inside the rAF loop (avoids stale closure).
-  const phaseRef  = useRef(phase);
-  const targetRef = useRef(target);
-  const resultRef = useRef(result);
-  const debugRef  = useRef(debug);
+  const phaseRef      = useRef(phase);
+  const targetRef     = useRef(target);
+  const resultRef     = useRef(result);
+  const debugRef      = useRef(debug);
+  const pocketSizeRef = useRef(pocketSize);
 
-  useEffect(() => { phaseRef.current  = phase;  }, [phase]);
-  useEffect(() => { targetRef.current = target; }, [target]);
-  useEffect(() => { resultRef.current = result; }, [result]);
-  useEffect(() => { debugRef.current  = debug;  }, [debug]);
+  useEffect(() => { phaseRef.current      = phase;      }, [phase]);
+  useEffect(() => { targetRef.current     = target;     }, [target]);
+  useEffect(() => { resultRef.current     = result;     }, [result]);
+  useEffect(() => { debugRef.current      = debug;      }, [debug]);
+  useEffect(() => { pocketSizeRef.current = pocketSize; }, [pocketSize]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -130,65 +142,72 @@ export default function PoseOverlay({
       const isResult   = curPhase === "saved" || curPhase === "goal";
       const revealTarget = isShooting || isResult;
 
-      // ── 1. Zone backgrounds & borders ──────────────────────────────────────
+      // ── 1. Zone backgrounds & borders (always faint) ───────────────────────
       for (const zone of ALL_SHOT_ZONES) {
         const b = SHOT_ZONES[zone];
-        // Convert normalised bounds → canvas pixel rect
         const px = b.x0 * w;
         const py = b.y0 * h;
         const pw = (b.x1 - b.x0) * w;
         const ph = (b.y1 - b.y0) * h;
 
-        const isTarget = revealTarget && curTarget === zone;
+        if (revealTarget) {
+          ctx.fillStyle   = "rgba(0,0,0,0.06)";
+          ctx.fillRect(px, py, pw, ph);
+          ctx.strokeStyle = "rgba(255,255,255,0.10)";
+          ctx.lineWidth   = 1;
+          ctx.strokeRect(px, py, pw, ph);
+        } else if (debugRef.current) {
+          ctx.fillStyle   = ZONE_IDLE_FILL[zone];
+          ctx.fillRect(px, py, pw, ph);
+          ctx.strokeStyle = ZONE_IDLE_BORDER[zone];
+          ctx.lineWidth   = 1;
+          ctx.strokeRect(px, py, pw, ph);
+          ctx.font         = "bold 12px system-ui";
+          ctx.fillStyle    = ZONE_IDLE_BORDER[zone];
+          ctx.textAlign    = "center";
+          ctx.textBaseline = "bottom";
+          ctx.fillText(ZONE_SHORT_LABEL[zone], px + pw / 2, py + ph - 4);
+          ctx.textBaseline = "alphabetic";
+        }
+      }
 
-        if (isTarget) {
-          if (isResult) {
-            ctx.fillStyle = curResult?.saved
-              ? "rgba(74,222,128,0.30)"
-              : "rgba(248,113,113,0.30)";
-            ctx.fillRect(px, py, pw, ph);
-            ctx.strokeStyle = curResult?.saved ? "rgba(74,222,128,0.90)" : "rgba(248,113,113,0.90)";
-            ctx.lineWidth = 2.5;
-          } else {
-            // Shot in progress — breathe yellow to guide the player
-            const pulse = Math.sin(Date.now() * 0.007) * 0.5 + 0.5;
-            ctx.fillStyle = `rgba(250,204,21,${(0.12 + pulse * 0.22).toFixed(2)})`;
-            ctx.fillRect(px, py, pw, ph);
-            ctx.strokeStyle = `rgba(250,204,21,${(0.60 + pulse * 0.35).toFixed(2)})`;
-            ctx.lineWidth = 2 + pulse * 2;
-          }
-          ctx.strokeRect(px + 1, py + 1, pw - 2, ph - 2);
+      // ── 1b. Target pocket highlight ──────────────────────────────────────
+      if (revealTarget && curTarget !== null) {
+        const pc  = TARGET_POCKET_CENTERS[curTarget];
+        const ps  = pocketSizeRef.current;
+        const pw2 = ps ? ps.w * w : 0.22 * w;
+        const ph2 = ps ? ps.h * h : 0.20 * h;
+        const ppx = (pc.x - (ps ? ps.w / 2 : 0.11)) * w;
+        const ppy = (pc.y - (ps ? ps.h / 2 : 0.10)) * h;
 
-          ctx.font      = "bold 14px system-ui";
-          ctx.fillStyle = isResult
-            ? (curResult?.saved ? "rgba(74,222,128,0.95)" : "rgba(248,113,113,0.95)")
-            : "rgba(250,204,21,0.95)";
+        if (isResult) {
+          const saved = curResult?.saved;
+          ctx.fillStyle   = saved ? "rgba(74,222,128,0.28)" : "rgba(248,113,113,0.28)";
+          ctx.fillRect(ppx, ppy, pw2, ph2);
+          ctx.strokeStyle = saved ? "rgba(74,222,128,0.95)" : "rgba(248,113,113,0.95)";
+          ctx.lineWidth   = 2.5;
+          ctx.strokeRect(ppx + 1, ppy + 1, pw2 - 2, ph2 - 2);
+
+          ctx.font         = "bold 13px system-ui";
+          ctx.fillStyle    = saved ? "rgba(74,222,128,0.95)" : "rgba(248,113,113,0.95)";
           ctx.textAlign    = "center";
           ctx.textBaseline = "middle";
-          ctx.fillText(SHOT_ZONE_LABELS[zone], px + pw / 2, py + ph / 2);
+          ctx.fillText(SHOT_ZONE_LABELS[curTarget], ppx + pw2 / 2, ppy + ph2 / 2);
           ctx.textBaseline = "alphabetic";
-        } else if (revealTarget) {
-          if (debugRef.current) {
-            ctx.fillStyle   = "rgba(0,0,0,0.08)";
-            ctx.fillRect(px, py, pw, ph);
-            ctx.strokeStyle = "rgba(255,255,255,0.12)";
-            ctx.lineWidth   = 1;
-            ctx.strokeRect(px, py, pw, ph);
-          }
         } else {
-          if (debugRef.current) {
-            ctx.fillStyle   = ZONE_IDLE_FILL[zone];
-            ctx.fillRect(px, py, pw, ph);
-            ctx.strokeStyle = ZONE_IDLE_BORDER[zone];
-            ctx.lineWidth   = 1;
-            ctx.strokeRect(px, py, pw, ph);
-            ctx.font      = "bold 12px system-ui";
-            ctx.fillStyle = ZONE_IDLE_BORDER[zone];
-            ctx.textAlign    = "center";
-            ctx.textBaseline = "bottom";
-            ctx.fillText(ZONE_SHORT_LABEL[zone], px + pw / 2, py + ph - 4);
-            ctx.textBaseline = "alphabetic";
-          }
+          const pulse = Math.sin(Date.now() * 0.008) * 0.5 + 0.5;
+          ctx.fillStyle   = `rgba(250,204,21,${(0.10 + pulse * 0.20).toFixed(2)})`;
+          ctx.fillRect(ppx, ppy, pw2, ph2);
+          ctx.strokeStyle = `rgba(250,204,21,${(0.65 + pulse * 0.30).toFixed(2)})`;
+          ctx.lineWidth   = 1.5 + pulse * 2;
+          ctx.strokeRect(ppx + 1, ppy + 1, pw2 - 2, ph2 - 2);
+
+          ctx.font         = "bold 12px system-ui";
+          ctx.fillStyle    = `rgba(250,204,21,${(0.70 + pulse * 0.25).toFixed(2)})`;
+          ctx.textAlign    = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(SHOT_ZONE_LABELS[curTarget], ppx + pw2 / 2, ppy + ph2 / 2);
+          ctx.textBaseline = "alphabetic";
         }
       }
 
@@ -213,17 +232,26 @@ export default function PoseOverlay({
         { pt: palmData.mpRight, solidColor: "#ef4444", glowColor: "rgba(239,68,68,0.50)"  },
       ];
 
+      // Use scoring-side pocket flags from latestInputRef for match detection
+      const li          = latestInputRef?.current;
+      const lInPocket   = li?.leftInPocket      ?? false;
+      const rInPocket   = li?.rightInPocket     ?? false;
+      const lEnteredPkt = li?.leftEnteredPocket  ?? false;
+      const rEnteredPkt = li?.rightEnteredPocket ?? false;
+
       for (const { pt, solidColor, glowColor } of gloveEntries) {
         if (!pt) continue;
 
         const { x: cx, y: cy } = landmarkToContainerPx(pt.x, pt.y, vt);
         const r = gloveR;
 
-        // Zone for this palm — same function as scoring (display-space: 1-rawX)
         const zone  = getZoneFromPoint({ x: 1 - pt.x, y: pt.y });
-        const match = isShooting && curTarget !== null && zone === curTarget;
+        const isLeft = pt === palmData.mpLeft;
+        const inPkt  = isLeft ? lInPocket  : rInPocket;
+        const entered = isLeft ? lEnteredPkt : rEnteredPkt;
+        const match = isShooting && (entered || inPkt);
 
-        // Glow halo — green when matching target zone during shot
+        // Glow halo — green when inside target pocket during shot
         ctx.beginPath();
         ctx.arc(cx, cy, r + 7, 0, Math.PI * 2);
         ctx.strokeStyle = match ? "rgba(74,222,128,0.65)" : glowColor;
@@ -247,7 +275,7 @@ export default function PoseOverlay({
         ctx.fillText("G", cx, cy);
         ctx.textBaseline = "alphabetic";
 
-        // Zone label next to glove (always visible — confirms which zone)
+        // Zone label next to glove
         const zoneLabel = ZONE_SHORT_LABEL[zone];
         ctx.font         = "bold 11px monospace";
         ctx.fillStyle    = match ? "rgba(74,222,128,0.95)" : "rgba(250,204,21,0.90)";
@@ -259,9 +287,6 @@ export default function PoseOverlay({
 
       // ── 3. Debug overlay ────────────────────────────────────────────────
       if (debugRef.current) {
-        // Use scoring-side values (latestInputRef) for exact debug parity.
-        // Fall back to computing from palmRef when ref is absent (e.g. no camera).
-        const li = latestInputRef?.current;
         const lZone: ShotZone | null = li
           ? li.leftZone
           : (palmData.mpLeft  ? getZoneFromPoint({ x: 1 - palmData.mpLeft.x,  y: palmData.mpLeft.y  }) : null);
@@ -269,15 +294,17 @@ export default function PoseOverlay({
           ? li.rightZone
           : (palmData.mpRight ? getZoneFromPoint({ x: 1 - palmData.mpRight.x, y: palmData.mpRight.y }) : null);
 
-        const lMatch = !!(curTarget && lZone === curTarget);
-        const rMatch = !!(curTarget && rZone === curTarget);
+        const pktW = li?.pocketSize?.w ?? pocketSizeRef.current?.w;
+        const pktH = li?.pocketSize?.h ?? pocketSizeRef.current?.h;
+        const saveEligible = lEnteredPkt || rEnteredPkt;
 
         const debugLines = [
           `Target:     ${curTarget ? SHOT_ZONE_LABELS[curTarget] : "—"}`,
+          `Pocket:     ${pktW !== undefined ? `${pktW.toFixed(2)}×${pktH?.toFixed(2)}` : "—"}`,
           `Save window:${isShooting ? " ACTIVE ✓" : " inactive"}`,
-          `Left hand:  ${lZone ? SHOT_ZONE_LABELS[lZone] : "none"}${lMatch ? "  ✓ MATCH" : ""}`,
-          `Right hand: ${rZone ? SHOT_ZONE_LABELS[rZone] : "none"}${rMatch ? "  ✓ MATCH" : ""}`,
-          `Match: ${lMatch || rMatch ? "true" : "false"}`,
+          `L zone:     ${lZone ? SHOT_ZONE_LABELS[lZone] : "none"}${lInPocket ? " ✓PKT" : ""}${lEnteredPkt ? " ENTERED" : ""}`,
+          `R zone:     ${rZone ? SHOT_ZONE_LABELS[rZone] : "none"}${rInPocket ? " ✓PKT" : ""}${rEnteredPkt ? " ENTERED" : ""}`,
+          `Eligible:   ${saveEligible}`,
         ];
 
         ctx.font      = "12px monospace";
@@ -287,16 +314,16 @@ export default function PoseOverlay({
           const y = 14 + i * lineH;
           ctx.fillStyle = "rgba(0,0,0,0.60)";
           ctx.fillRect(4, y - 12, line.length * 7.2 + 6, lineH);
-          const isMatchLine = (i === 2 && lMatch) || (i === 3 && rMatch) || (i === 4 && (lMatch || rMatch));
-          ctx.fillStyle = isMatchLine ? "rgba(74,222,128,0.95)" : "rgba(250,204,21,0.95)";
+          const hi = saveEligible && (i === 3 || i === 4 || i === 5);
+          ctx.fillStyle = hi ? "rgba(74,222,128,0.95)" : "rgba(250,204,21,0.95)";
           ctx.fillText(line, 6, y);
         });
 
-        // Zone grid + forgiveness margins (dashed)
+        // Zone grid (faint dashed)
         for (const zone of ALL_SHOT_ZONES) {
           const b = SHOT_ZONES[zone];
           const f = ZONE_FORGIVENESS;
-          ctx.strokeStyle = "rgba(250,204,21,0.30)";
+          ctx.strokeStyle = "rgba(250,204,21,0.20)";
           ctx.lineWidth   = 1;
           ctx.setLineDash([4, 4]);
           ctx.strokeRect(
@@ -305,6 +332,24 @@ export default function PoseOverlay({
             (b.y1 - b.y0 + 2 * f) * h,
           );
           ctx.setLineDash([]);
+        }
+
+        // Pocket outlines for all zones (dashed cyan)
+        const ps = pocketSizeRef.current;
+        if (ps) {
+          for (const zone of ALL_SHOT_ZONES) {
+            const pc = TARGET_POCKET_CENTERS[zone];
+            ctx.strokeStyle = zone === curTarget
+              ? "rgba(74,222,128,0.50)"
+              : "rgba(34,211,238,0.25)";
+            ctx.lineWidth   = 1;
+            ctx.setLineDash([3, 5]);
+            ctx.strokeRect(
+              (pc.x - ps.w / 2) * w, (pc.y - ps.h / 2) * h,
+              ps.w * w, ps.h * h,
+            );
+            ctx.setLineDash([]);
+          }
         }
       }
     }

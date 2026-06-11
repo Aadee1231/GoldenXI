@@ -569,3 +569,61 @@ export type CollisionState = {
   gloves: (GloveDebugState | null)[];
   anyOverlap: boolean; phase: string; fieldW: number; fieldH: number; t: number;
 };
+
+// ── Target pocket system (v3_hard) ───────────────────────────────────────────
+
+/**
+ * Normalised target pocket centres in mirrored display space.
+ * Each zone has a specific sweet-spot smaller than the zone itself.
+ *
+ * These are the single source of truth — PoseOverlay and CameraGoalieMode
+ * both import from here so the displayed pocket matches the scoring area exactly.
+ */
+export const TARGET_POCKET_CENTERS: Record<ShotZone, { x: number; y: number }> = {
+  "top-left":      { x: 0.18, y: 0.22 },
+  "top-middle":    { x: 0.50, y: 0.18 },
+  "top-right":     { x: 0.82, y: 0.22 },
+  "bottom-left":   { x: 0.18, y: 0.72 },
+  "bottom-middle": { x: 0.50, y: 0.70 },
+  "bottom-right":  { x: 0.82, y: 0.72 },
+};
+
+/** Normalised pocket dimensions (w × h in mirrored display space). */
+export type PocketSize = { w: number; h: number };
+
+/**
+ * Returns the target pocket size for a given 1-indexed shot number.
+ * Pocket shrinks as shots increase — forces increasingly precise saves.
+ */
+export function getPocketSize(shot: number): PocketSize {
+  if (shot <= 7)  return { w: 0.28, h: 0.26 }; // warmup
+  if (shot <= 13) return { w: 0.23, h: 0.22 }; // medium
+  if (shot <= 23) return { w: 0.19, h: 0.18 }; // hard
+  if (shot <= 38) return { w: 0.15, h: 0.15 }; // expert
+  return { w: 0.12, h: 0.12 };                  // insane
+}
+
+/**
+ * Returns true when the palm falls inside the target pocket for a given zone.
+ *
+ * The pocket is a rectangle centred on TARGET_POCKET_CENTERS[zone].
+ * This is the single source of truth for save detection AND visual rendering —
+ * both must use this function so the displayed pocket matches the scoring area.
+ *
+ * @param mx      Palm x in mirrored normalised display space
+ * @param my      Palm y in normalised display space
+ * @param zone    Target zone
+ * @param pocketW Full pocket width (normalised)
+ * @param pocketH Full pocket height (normalised)
+ */
+export function palmInPocket(
+  mx: number, my: number,
+  zone: ShotZone,
+  pocketW: number,
+  pocketH: number,
+): boolean {
+  const c = TARGET_POCKET_CENTERS[zone];
+  const hw = pocketW / 2;
+  const hh = pocketH / 2;
+  return mx >= c.x - hw && mx <= c.x + hw && my >= c.y - hh && my <= c.y + hh;
+}

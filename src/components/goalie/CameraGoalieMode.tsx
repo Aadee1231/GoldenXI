@@ -29,16 +29,21 @@ import {
 import {
   getDifficultyForShot,
   pickWeightedZone,
+  pickShotStyle,
+  pickFlightMs,
   difficultyDebugLines,
   DIFFICULTY_STAGES,
+  type ShotStyle,
 } from "@/src/lib/goalie/difficulty";
 import { useGameAudio } from "./useGameAudio";
 import {
   SHOT_ZONE_LABELS,
-  zoneCenterDisplay,
   getZoneFromPoint,
-  palmInZone,
+  palmInPocket,
+  getPocketSize,
+  TARGET_POCKET_CENTERS,
   type ShotZone,
+  type PocketSize,
 } from "@/src/lib/goalie/geometry";
 
 // ---------------------------------------------------------------------------
@@ -152,8 +157,9 @@ export default function CameraGoalieMode({ onBack }: CameraGoalieModeProps) {
   const [trackingWarn, setTrackingWarn]   = useState(false);
   const [bestStreak, setBestStreak]       = useState(0);
   const [leaderboardRefreshKey, setLeaderboardRefreshKey] = useState(0);
-  const [curFlightMs, setCurFlightMs]     = useState(DIFFICULTY_STAGES[0].flightMs);
-  const [shotIsCurved, setShotIsCurved]   = useState(false);
+  const [curFlightMs, setCurFlightMs]     = useState(DIFFICULTY_STAGES[0].flightMaxMs);
+  const [curShotStyle, setCurShotStyle]   = useState<ShotStyle>("straight");
+  const [curPocketSize, setCurPocketSize] = useState<PocketSize>({ w: 0.28, h: 0.26 });
   const [showDebug, setShowDebug]         = useState(false);
   const [forcedZone, setForcedZone]       = useState<ShotZone | null>(null);
   const [readyValid, setReadyValid]       = useState(false);
@@ -296,8 +302,9 @@ export default function CameraGoalieMode({ onBack }: CameraGoalieModeProps) {
       reactionTimes: p.reactionTimes,
       bestStreak:    p.bestStreak,
       metadata: {
-        detection_method: "zone_based",
-        difficulty_ramp:  "step_flight_ms",
+        detection_method: "pocket_based",
+        difficulty_ramp:  "v3_hard_pocket",
+        game_version:     "goalie_reaction_v3_hard",
       },
     });
   }, [phase, submitOnce]);
@@ -316,11 +323,21 @@ export default function CameraGoalieMode({ onBack }: CameraGoalieModeProps) {
   // Latest hand zones — written every rAF, read by pollHandZone.
   // Do NOT use React state here; frame-perfect read without re-renders.
   const latestCameraInputRef = useRef<{
-    leftZone:   ShotZone | null;
-    rightZone:  ShotZone | null;
-    leftPoint:  { x: number; y: number } | null;
-    rightPoint: { x: number; y: number } | null;
-  }>({ leftZone: null, rightZone: null, leftPoint: null, rightPoint: null });
+    leftZone:          ShotZone | null;
+    rightZone:         ShotZone | null;
+    leftPoint:         { x: number; y: number } | null;
+    rightPoint:        { x: number; y: number } | null;
+    leftInPocket:      boolean;
+    rightInPocket:     boolean;
+    leftEnteredPocket: boolean;
+    rightEnteredPocket:boolean;
+    pocketSize:        PocketSize | null;
+  }>({
+    leftZone: null, rightZone: null, leftPoint: null, rightPoint: null,
+    leftInPocket: false, rightInPocket: false,
+    leftEnteredPocket: false, rightEnteredPocket: false,
+    pocketSize: null,
+  });
 
   // ── resolveRound ───────────────────────────────────────────────────────────
   const resolveRound = useCallback(
@@ -401,7 +418,13 @@ export default function CameraGoalieMode({ onBack }: CameraGoalieModeProps) {
   const beginShot = useCallback(() => {
     // ── Difficulty stage for this shot ──────────────────────────────────────
     const stage = getDifficultyForShot(shotsRef.current);
-    const { flightMs: flight, forgiveness } = stage;
+
+    // ── Shot style + flight duration ─────────────────────────────────────────
+    const shotStyle = pickShotStyle(stage);
+    const flight    = pickFlightMs(stage, shotStyle);
+
+    // ── Pocket size for this shot ────────────────────────────────────────────
+    const pocketSz = getPocketSize(shotsRef.current);
 
     // ── Zone selection: weighted random + anti-repeat ───────────────────────
     const zone = pickWeightedZone(stage.zoneWeights, recentZonesRef.current, forcedZoneRef.current);
@@ -409,20 +432,22 @@ export default function CameraGoalieMode({ onBack }: CameraGoalieModeProps) {
     forcedZoneRef.current = null;
     recentZonesRef.current = [zone, ...recentZonesRef.current].slice(0, 2);
 
-    // ── Curved shot visual at Pressure (21+) and Elite (31+) stages ─────────
-    setShotIsCurved(stage.minShot >= 21);
-
+    setCurShotStyle(shotStyle);
+    setCurPocketSize(pocketSz);
     setCurFlightMs(flight);
     setTarget(zone);
     targetRef.current = zone;
     setPick(null);
     shotStartRef.current = performance.now();
     handSeenRef.current  = false;
-    latestCameraInputRef.current = { leftZone: null, rightZone: null, leftPoint: null, rightPoint: null };
+    latestCameraInputRef.current = {
+      leftZone: null, rightZone: null, leftPoint: null, rightPoint: null,
+      leftInPocket: false, rightInPocket: false,
+      leftEnteredPocket: false, rightEnteredPocket: false,
+      pocketSize: pocketSz,
+    };
 
-    // ── Snapshot hand positions at shot start for enter-zone detection ────────────
-    // A save only counts when a hand ENTERS the target zone during the shot,
-    // not when it is already there at the start (camping exploit fix).
+    // ── Snapshot: anti-camping — save only when hand ENTERS pocket during shot
     {
       const pd0 = palmLandmarksRef.current;
       const lp0 = pd0?.mpLeft  ?? null;
@@ -433,38 +458,28 @@ export default function CameraGoalieMode({ onBack }: CameraGoalieModeProps) {
       const rightNow0 = rd0 ? getZoneFromPoint(rd0) : null;
       leftAtShotStartRef.current    = leftNow0;
       rightAtShotStartRef.current   = rightNow0;
-      leftPrevInTargetRef.current   = ld0 ? palmInZone(ld0.x, ld0.y, zone, forgiveness) : false;
-      rightPrevInTargetRef.current  = rd0 ? palmInZone(rd0.x, rd0.y, zone, forgiveness) : false;
+      leftPrevInTargetRef.current   = ld0 ? palmInPocket(ld0.x, ld0.y, zone, pocketSz.w, pocketSz.h) : false;
+      rightPrevInTargetRef.current  = rd0 ? palmInPocket(rd0.x, rd0.y, zone, pocketSz.w, pocketSz.h) : false;
       leftEnteredTargetRef.current  = false;
       rightEnteredTargetRef.current = false;
     }
 
-    // → Set phaseRef DIRECTLY before the rAF loop starts.
-    // setPhase() is async (queues a React re-render); the useEffect that syncs
-    // phaseRef runs AFTER the next paint, which is too late — the first rAF
-    // frame would see phaseRef.current === "runup" and exit without rescheduling,
-    // killing the loop permanently.  Direct assignment fixes this race.
     phaseRef.current = "shot";
     setPhase("shot");
 
-    // Timeout: save window ends, no matching zone found → goal
     sfxRef.current.playKick();
     windowTimer.current = setTimeout(() => {
       goalReasonRef.current = handSeenRef.current ? "wrong-zone" : "no-hands";
       resolveRound(null, true);
     }, flight);
 
-    // ── Zone polling loop ─────────────────────────────────────────────────────
-    // Save rule: leftZone === targetZone  ||  rightZone === targetZone
-    // Nothing else.  No collision.  No motion.  No ball distance.
-    // Coordinates: raw MediaPipe x → display-space via (1 − rawX), y unchanged.
-    // getZoneFromPoint is the single canonical zone function; PoseOverlay uses it too.
+    // ── Pocket polling loop ───────────────────────────────────────────────────
+    // Save rule: hand ENTERS the target pocket (palmInPocket) during the shot.
+    // Display coords: raw MediaPipe x → mirrored via (1 − rawX), y unchanged.
     function pollHandZone() {
       if (phaseRef.current !== "shot") return;
 
       const pd = palmLandmarksRef.current;
-
-      // Convert raw MediaPipe coords → display-space (mirror x, y unchanged)
       const lp = pd?.mpLeft  ?? null;
       const rp = pd?.mpRight ?? null;
       const leftDisplay  = lp ? { x: 1 - lp.x, y: lp.y } : null;
@@ -473,39 +488,45 @@ export default function CameraGoalieMode({ onBack }: CameraGoalieModeProps) {
       const leftZone  = leftDisplay  ? getZoneFromPoint(leftDisplay)  : null;
       const rightZone = rightDisplay ? getZoneFromPoint(rightDisplay) : null;
 
+      const targetZone = targetRef.current!;
+
+      // ── Pocket detection ──────────────────────────────────────────────────
+      const leftNowInPocket  = leftDisplay  ? palmInPocket(leftDisplay.x, leftDisplay.y, targetZone, pocketSz.w, pocketSz.h) : false;
+      const rightNowInPocket = rightDisplay ? palmInPocket(rightDisplay.x, rightDisplay.y, targetZone, pocketSz.w, pocketSz.h) : false;
+
+      if (!leftPrevInTargetRef.current  && leftNowInPocket)  leftEnteredTargetRef.current  = true;
+      if (!rightPrevInTargetRef.current && rightNowInPocket) rightEnteredTargetRef.current = true;
+
+      leftPrevInTargetRef.current  = leftNowInPocket;
+      rightPrevInTargetRef.current = rightNowInPocket;
+
+      const saveEligible = leftEnteredTargetRef.current || rightEnteredTargetRef.current;
+
       // Update shared ref so PoseOverlay debug shows IDENTICAL values to scoring
-      latestCameraInputRef.current = { leftZone, rightZone, leftPoint: leftDisplay, rightPoint: rightDisplay };
+      latestCameraInputRef.current = {
+        leftZone, rightZone, leftPoint: leftDisplay, rightPoint: rightDisplay,
+        leftInPocket: leftNowInPocket, rightInPocket: rightNowInPocket,
+        leftEnteredPocket: leftEnteredTargetRef.current,
+        rightEnteredPocket: rightEnteredTargetRef.current,
+        pocketSize: pocketSz,
+      };
 
       if (lp || rp) handSeenRef.current = true;
       setTrackingWarn(!lp && !rp);
-
-      const targetZone = targetRef.current!;
-
-      // ── Enter-zone detection — forgiveness-aware palmInZone ─────────────────
-      const leftNowInTarget  = leftDisplay  ? palmInZone(leftDisplay.x, leftDisplay.y, targetZone, forgiveness) : false;
-      const rightNowInTarget = rightDisplay ? palmInZone(rightDisplay.x, rightDisplay.y, targetZone, forgiveness) : false;
-
-      if (!leftPrevInTargetRef.current  && leftNowInTarget)  leftEnteredTargetRef.current  = true;
-      if (!rightPrevInTargetRef.current && rightNowInTarget) rightEnteredTargetRef.current = true;
-
-      leftPrevInTargetRef.current  = leftNowInTarget;
-      rightPrevInTargetRef.current = rightNowInTarget;
-
-      const saveEligible = leftEnteredTargetRef.current || rightEnteredTargetRef.current;
 
       if (debugDisplayRef.current) {
         const elapsed = performance.now() - shotStartRef.current;
         debugDisplayRef.current.textContent = [
           ...difficultyDebugLines(stage, shotsRef.current),
           `── SHOT DEBUG ──────────────────────`,
-          `Target zone:            ${SHOT_ZONE_LABELS[targetZone]}`,
-          `Left zone @ start:      ${leftAtShotStartRef.current  ? SHOT_ZONE_LABELS[leftAtShotStartRef.current]  : "none"}`,
-          `Right zone @ start:     ${rightAtShotStartRef.current ? SHOT_ZONE_LABELS[rightAtShotStartRef.current] : "none"}`,
-          `Left zone now:          ${leftZone  ? SHOT_ZONE_LABELS[leftZone]  : "none"}`,
-          `Right zone now:         ${rightZone ? SHOT_ZONE_LABELS[rightZone] : "none"}`,
-          `Left entered target:    ${leftEnteredTargetRef.current}`,
-          `Right entered target:   ${rightEnteredTargetRef.current}`,
-          `Save eligible:          ${saveEligible}`,
+          `Target zone:      ${SHOT_ZONE_LABELS[targetZone]}`,
+          `Pocket size:      ${pocketSz.w.toFixed(2)}×${pocketSz.h.toFixed(2)}`,
+          `Shot style:       ${shotStyle}`,
+          `L zone @ start:   ${leftAtShotStartRef.current  ? SHOT_ZONE_LABELS[leftAtShotStartRef.current]  : "none"}`,
+          `R zone @ start:   ${rightAtShotStartRef.current ? SHOT_ZONE_LABELS[rightAtShotStartRef.current] : "none"}`,
+          `L in pocket:      ${leftNowInPocket}  entered: ${leftEnteredTargetRef.current}`,
+          `R in pocket:      ${rightNowInPocket}  entered: ${rightEnteredTargetRef.current}`,
+          `Save eligible:    ${saveEligible}`,
           `t=${elapsed.toFixed(0)}ms / ${flight}ms`,
         ].join("\n");
       }
@@ -630,7 +651,9 @@ export default function CameraGoalieMode({ onBack }: CameraGoalieModeProps) {
     setShot(1); setLives(STARTING_LIVES);
     setTarget(null); setPick(null); setLastResult(null);
     setReactionTimes([]); setTrackingWarn(false); setBestStreak(0);
-    setCurFlightMs(DIFFICULTY_STAGES[0].flightMs);
+    setCurFlightMs(DIFFICULTY_STAGES[0].flightMaxMs);
+    setCurShotStyle("straight");
+    setCurPocketSize({ w: 0.28, h: 0.26 });
     recentZonesRef.current   = [];
     streakRef.current        = 0;
     bestStreakRef.current    = 0;
@@ -671,8 +694,8 @@ export default function CameraGoalieMode({ onBack }: CameraGoalieModeProps) {
   // ── Render ─────────────────────────────────────────────────────────────────
   const isBest = score >= best && score > 0;
 
-  // Ball target position for ShotBall overlay
-  const ballTarget = target ? zoneCenterDisplay(target) : null;
+  // Ball target position for ShotBall overlay — uses pocket centre for visual parity
+  const ballTarget = target ? TARGET_POCKET_CENTERS[target] : null;
 
   return (
     <div className="w-full">
@@ -740,6 +763,7 @@ export default function CameraGoalieMode({ onBack }: CameraGoalieModeProps) {
               videoRef={videoRef}
               showDebug={showDebug}
               latestInputRef={latestCameraInputRef}
+              pocketSize={curPocketSize}
             />
 
             {/* Ball — shot / saved / goal phases */}
@@ -749,7 +773,7 @@ export default function CameraGoalieMode({ onBack }: CameraGoalieModeProps) {
                 targetX={ballTarget.x}
                 targetY={ballTarget.y}
                 flightMs={curFlightMs}
-                curved={shotIsCurved}
+                shotStyle={curShotStyle}
               />
             )}
 

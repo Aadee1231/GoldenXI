@@ -130,10 +130,10 @@ export async function submitGoalieScore(
 
   // Enrich metadata with standard game-context fields.
   const enrichedMetadata: Record<string, unknown> = {
-    game_version:   "goalie_reaction_v2_endless",
+    game_version:   "goalie_reaction_v3_hard",
     starting_lives: 3,
     lives_used:     payload.goalsAllowed,
-    difficulty_ramp: "progressive_flight_ms",
+    difficulty_ramp: "v3_hard_pocket",
     shots_faced:    payload.shotsFaced,
     ...(payload.metadata ?? {}),
   };
@@ -151,7 +151,7 @@ export async function submitGoalieScore(
     fastest_reaction_ms: fastestReactionMs,
     best_streak:         payload.bestStreak,
     accuracy,
-    game_version:        "goalie_reaction_v2_endless",
+    game_version:        "goalie_reaction_v3_hard",
     ended_reason:        "lives_lost",
     metadata:            enrichedMetadata,
   };

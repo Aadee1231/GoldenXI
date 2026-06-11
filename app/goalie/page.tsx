@@ -30,7 +30,7 @@ export default function GoaliePage() {
             </span>
           </h1>
           <p className="mx-auto mt-3 max-w-md text-sm text-zinc-400 sm:text-base">
-            Read the shot and dive the right way. 10 penalties, pure reflexes.
+            Read the shot and dive in time to save the goal. Start by putting both hands in front of the screen. You got 3 lives, make them count!
           </p>
         </div>
 

@@ -1,31 +1,42 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { ShotStyle } from "@/src/lib/goalie/difficulty";
 
 type Props = {
-  /** Target x in container space [0,1] — from zoneCenterDisplay. */
+  /** Target x in container space [0,1] — from TARGET_POCKET_CENTERS. */
   targetX: number;
-  /** Target y in container space [0,1] — from zoneCenterDisplay. */
+  /** Target y in container space [0,1] — from TARGET_POCKET_CENTERS. */
   targetY: number;
   /** Total flight duration in ms — matches the save-detection window. */
   flightMs: number;
   /**
-   * When true the ball adds a visual lateral arc (stages 4-5).
-   * Purely decorative — save detection remains zone-based.
+   * Visual style of the ball flight — purely decorative.
+   * Save detection is pocket-based regardless of style.
    */
-  curved?: boolean;
+  shotStyle?: ShotStyle;
 };
 
 /** Penalty spot: horizontally centred, near the bottom of the container. */
 const SPOT_X = 0.50;
 const SPOT_Y = 0.86;
 
+/** Map ShotStyle to the CSS animation name prefix (direction appended at runtime). */
+function arcAnimationName(style: ShotStyle): string | null {
+  switch (style) {
+    case "slight-curve": return "goalie-ball-arc";
+    case "heavy-curve":  return "goalie-ball-arc-heavy";
+    case "late-swerve":  return "goalie-ball-arc-late";
+    default:             return null;
+  }
+}
+
 /**
- * Animated ⚽ that flies from the penalty spot to a target zone on mount.
+ * Animated ⚽ that flies from the penalty spot to a target pocket on mount.
  *
  * Structure (two divs):
  *   Outer — handles x/y via CSS `left`/`top` transitions + optional lateral
- *           arc animation (`translateX` half-sine wave, returns to 0 at end).
+ *           arc animation (`translateX` keyframe, returns to 0 at end).
  *   Inner — handles centering (`translate(-50%,-50%)`) and perspective scale.
  *
  * The split ensures the arc `transform` on the outer div never conflicts with
@@ -33,9 +44,8 @@ const SPOT_Y = 0.86;
  *
  * Re-mount with a fresh `key` for every shot so the ball always resets.
  */
-export default function ShotBall({ targetX, targetY, flightMs, curved = false }: Props) {
+export default function ShotBall({ targetX, targetY, flightMs, shotStyle = "straight" }: Props) {
   const [launched, setLaunched] = useState(false);
-  // Arc direction is fixed per mount (one shot = one direction)
   const arcDirRef = useRef<"l" | "r">(Math.random() < 0.5 ? "l" : "r");
 
   useEffect(() => {
@@ -45,7 +55,9 @@ export default function ShotBall({ targetX, targetY, flightMs, curved = false }:
 
   const x     = launched ? targetX : SPOT_X;
   const y     = launched ? targetY : SPOT_Y;
-  const scale = launched ? 0.75 : 1.5; // shrinks as it flies away from camera
+  const scale = launched ? 0.75 : 1.5;
+
+  const arcName = arcAnimationName(shotStyle);
 
   return (
     <div
@@ -61,8 +73,8 @@ export default function ShotBall({ targetX, targetY, flightMs, curved = false }:
         transition:    launched
           ? `left ${flightMs}ms cubic-bezier(0.35, 0, 0.65, 1), top ${flightMs}ms cubic-bezier(0.15, 0.5, 0.5, 1)`
           : "none",
-        animation:     launched && curved
-          ? `goalie-ball-arc-${arcDirRef.current} ${flightMs}ms ease-in-out forwards`
+        animation:     launched && arcName
+          ? `${arcName}-${arcDirRef.current} ${flightMs}ms ease-in-out forwards`
           : "none",
       }}
     >

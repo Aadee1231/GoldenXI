@@ -1,22 +1,19 @@
 /**
- * difficulty.ts — Goalkeeper camera-mode difficulty progression.
+ * difficulty.ts — Goalkeeper camera-mode difficulty progression (v3_hard).
  *
  * Each stage defines all parameters for a range of shot numbers:
- *   · flightMs    — save window duration (ms) — primary "speed" knob
- *   · forgiveness — zone boundary margin for palmInZone save detection
- *   · runupMinMs  — minimum whistle-to-kick delay (ms)
- *   · runupMaxMs  — maximum whistle-to-kick delay (ms) — variance = unpredictability
- *   · zoneWeights — relative probability of each zone being targeted
+ *   · flightMinMs / flightMaxMs  — ball flight window range (ms)
+ *   · fakeoutChance              — probability of a slow deceptive ball
+ *   · fakeoutFlightMinMs/MaxMs   — slow-ball flight range
+ *   · runupMinMs / runupMaxMs    — whistle-to-kick delay range
+ *   · curveChance                — probability of a curved/swerving visual
+ *   · zoneWeights                — relative probability of each zone
  *
- * Zone difficulty notes:
- *   top-left / top-right  → hardest (large arm travel, cross-body)
- *   top-middle            → medium  (up but no reach)
- *   bottom-left/right     → easy    (natural lean)
- *   bottom-middle         → easiest (arms already low and centred)
+ * Save detection uses target pockets (palmInPocket) — not full zones.
+ * Pocket size is computed by getPocketSize(shot) in geometry.ts.
  *
  * Anti-repeat: pickWeightedZone() applies a 70% weight penalty to zones
- * used in the last 2 shots — avoids exploitation and monotony while never
- * making any zone impossible.
+ * used in the last 2 shots — avoids exploitation while never removing any zone.
  */
 
 import { ALL_SHOT_ZONES, type ShotZone } from "@/src/lib/goalie/geometry";
@@ -25,24 +22,35 @@ import { ALL_SHOT_ZONES, type ShotZone } from "@/src/lib/goalie/geometry";
 // Types
 // ---------------------------------------------------------------------------
 
+/** Visual style of the shot ball — purely decorative, save logic unchanged. */
+export type ShotStyle =
+  | "straight"
+  | "slight-curve"
+  | "heavy-curve"
+  | "late-swerve"
+  | "slow-fakeout";
+
 export type DifficultyStage = {
   /** Human-readable name shown in the DEBUG overlay. */
   name: string;
   /** First 1-indexed shot number where this stage is active. */
   minShot: number;
-  /** Ball flight window — time the player has to react (ms). */
-  flightMs: number;
-  /**
-   * Zone boundary forgiveness for save detection.
-   * Passed directly to palmInZone():
-   *   +0.04 = zone boundary expands 4 % → more generous (easy)
-   *    0.00 = exact hard-boundary match (hard)
-   */
-  forgiveness: number;
+  /** Minimum ball flight window for normal shots (ms). */
+  flightMinMs: number;
+  /** Maximum ball flight window for normal shots (ms). */
+  flightMaxMs: number;
+  /** Probability [0–1] that this shot is a slow deceptive fakeout. */
+  fakeoutChance: number;
+  /** Minimum flight for fakeout (slow, deceptive) shots (ms). */
+  fakeoutFlightMinMs: number;
+  /** Maximum flight for fakeout shots (ms). */
+  fakeoutFlightMaxMs: number;
   /** Minimum runup delay between whistle and kick (ms). */
   runupMinMs: number;
   /** Maximum runup delay — higher range = more unpredictable timing. */
   runupMaxMs: number;
+  /** Probability [0–1] that the ball uses a curved/swerving animation. */
+  curveChance: number;
   /** Relative weights for zone selection (need not sum to 1). */
   zoneWeights: Record<ShotZone, number>;
 };
@@ -53,83 +61,103 @@ export type DifficultyStage = {
 
 export const DIFFICULTY_STAGES: DifficultyStage[] = [
   {
-    name: "Warm Up",
-    minShot: 1,
-    flightMs: 1600,
-    forgiveness: 0.04,
-    runupMinMs: 1000,
-    runupMaxMs: 3500,
-    zoneWeights: {
-      "top-left":      1,  // rare — avoid corners early
-      "top-middle":    2,
-      "top-right":     1,
-      "bottom-left":   4,  // bias toward easy bottom zones
-      "bottom-middle": 5,  // most common — natural position
-      "bottom-right":  4,
-    },
-  },
-  {
-    name: "Building",
-    minShot: 6,
-    flightMs: 1350,
-    forgiveness: 0.03,
+    name: "Warmup",
+    minShot: 1,  // shots 1–7
+    flightMinMs: 1350,
+    flightMaxMs: 1600,
+    fakeoutChance: 0,
+    fakeoutFlightMinMs: 1350,
+    fakeoutFlightMaxMs: 1600,
     runupMinMs: 900,
-    runupMaxMs: 3200,
+    runupMaxMs: 1800,
+    curveChance: 0,
     zoneWeights: {
-      "top-left":      2,
-      "top-middle":    3,
-      "top-right":     2,
-      "bottom-left":   4,
-      "bottom-middle": 4,
-      "bottom-right":  4,
+      "top-left":      1.0,
+      "top-middle":    1.0,
+      "top-right":     1.0,
+      "bottom-left":   1.3,
+      "bottom-middle": 1.5,
+      "bottom-right":  1.3,
     },
   },
   {
-    name: "In the Zone",
-    minShot: 11,
-    flightMs: 1150,
-    forgiveness: 0.02,
-    runupMinMs: 800,
-    runupMaxMs: 3000,
-    zoneWeights: {
-      "top-left":      3,  // all zones equal
-      "top-middle":    3,
-      "top-right":     3,
-      "bottom-left":   3,
-      "bottom-middle": 3,
-      "bottom-right":  3,
-    },
-  },
-  {
-    name: "Pressure",
-    minShot: 21,
-    flightMs: 950,
-    forgiveness: 0.01,
+    name: "Medium",
+    minShot: 8,  // shots 8–13
+    flightMinMs: 1050,
+    flightMaxMs: 1350,
+    fakeoutChance: 0,
+    fakeoutFlightMinMs: 1050,
+    fakeoutFlightMaxMs: 1350,
     runupMinMs: 700,
-    runupMaxMs: 2600,
+    runupMaxMs: 2200,
+    curveChance: 0.15,
     zoneWeights: {
-      "top-left":      4,  // corners start dominating
-      "top-middle":    2,
-      "top-right":     4,
-      "bottom-left":   3,
-      "bottom-middle": 1,  // easy centre fades
-      "bottom-right":  3,
+      "top-left":      1.5,
+      "top-middle":    1.2,
+      "top-right":     1.5,
+      "bottom-left":   1.2,
+      "bottom-middle": 1.0,
+      "bottom-right":  1.2,
     },
   },
   {
-    name: "Elite",
-    minShot: 31,
-    flightMs: 750,
-    forgiveness: 0.00,
-    runupMinMs: 600,
-    runupMaxMs: 2200,
+    name: "Hard",
+    minShot: 14, // shots 14–23
+    flightMinMs: 800,
+    flightMaxMs: 1100,
+    fakeoutChance: 0.15,
+    fakeoutFlightMinMs: 1100,
+    fakeoutFlightMaxMs: 1400,
+    runupMinMs: 500,
+    runupMaxMs: 2600,
+    curveChance: 0.45,
     zoneWeights: {
-      "top-left":      5,  // brutal — corners dominate
-      "top-middle":    1,
-      "top-right":     5,
-      "bottom-left":   2,
-      "bottom-middle": 1,
-      "bottom-right":  2,
+      "top-left":      2.2,
+      "top-middle":    1.6,
+      "top-right":     2.2,
+      "bottom-left":   1.0,
+      "bottom-middle": 0.6,
+      "bottom-right":  1.0,
+    },
+  },
+  {
+    name: "Expert",
+    minShot: 24, // shots 24–38
+    flightMinMs: 600,
+    flightMaxMs: 900,
+    fakeoutChance: 0.20,
+    fakeoutFlightMinMs: 1100,
+    fakeoutFlightMaxMs: 1400,
+    runupMinMs: 350,
+    runupMaxMs: 3000,
+    curveChance: 0.70,
+    zoneWeights: {
+      "top-left":      3.0,
+      "top-middle":    2.0,
+      "top-right":     3.0,
+      "bottom-left":   0.8,
+      "bottom-middle": 0.4,
+      "bottom-right":  0.8,
+    },
+  },
+  {
+    name: "Insane",
+    minShot: 39, // shots 39+
+    flightMinMs: 450,
+    flightMaxMs: 750,
+    fakeoutChance: 0.15,
+    fakeoutFlightMinMs: 1100,
+    fakeoutFlightMaxMs: 1400,
+    runupMinMs: 250,
+    runupMaxMs: 3200,
+    curveChance: 0.85,
+    zoneWeights: {
+      "top-left":      3.0,
+      "top-middle":    2.0,
+      "top-right":     3.0,
+      "bottom-left":   0.8,
+      "bottom-middle": 0.4,
+      "bottom-right":  0.8,
     },
   },
 ];
@@ -149,6 +177,33 @@ export function getDifficultyForShot(shot: number): DifficultyStage {
     else break;
   }
   return active;
+}
+
+/**
+ * Picks a shot style weighted by the stage's curve/fakeout probabilities.
+ * Higher stages see more curves, swerves, and late-breaking balls.
+ */
+export function pickShotStyle(stage: DifficultyStage): ShotStyle {
+  if (Math.random() < stage.fakeoutChance) return "slow-fakeout";
+  if (Math.random() >= stage.curveChance)  return "straight";
+  const r = Math.random();
+  if (r < 0.35) return "slight-curve";
+  if (r < 0.70) return "heavy-curve";
+  return "late-swerve";
+}
+
+/**
+ * Returns the ball flight duration for the given stage and style.
+ * Fakeout shots use a slower, deceptive flight range.
+ * All other shots pick randomly within the stage's normal range.
+ */
+export function pickFlightMs(stage: DifficultyStage, style: ShotStyle): number {
+  if (style === "slow-fakeout") {
+    return stage.fakeoutFlightMinMs +
+      Math.floor(Math.random() * (stage.fakeoutFlightMaxMs - stage.fakeoutFlightMinMs + 1));
+  }
+  return stage.flightMinMs +
+    Math.floor(Math.random() * (stage.flightMaxMs - stage.flightMinMs + 1));
 }
 
 /**
@@ -191,8 +246,9 @@ export function difficultyDebugLines(stage: DifficultyStage, shot: number): stri
   return [
     `── DIFFICULTY ──────────────────────`,
     `Stage:       ${stage.name}  (shot ${shot}, minShot ${stage.minShot})`,
-    `Flight ms:   ${stage.flightMs}ms`,
-    `Forgiveness: ${stage.forgiveness}`,
+    `Flight ms:   ${stage.flightMinMs}–${stage.flightMaxMs}ms`,
+    `Fakeout:     ${(stage.fakeoutChance * 100).toFixed(0)}% (${stage.fakeoutFlightMinMs}–${stage.fakeoutFlightMaxMs}ms)`,
+    `Curve chance:${(stage.curveChance * 100).toFixed(0)}%`,
     `Runup:       ${stage.runupMinMs}–${stage.runupMaxMs}ms`,
     `Weights:     TL=${w["top-left"]} TM=${w["top-middle"]} TR=${w["top-right"]}`,
     `             BL=${w["bottom-left"]} BM=${w["bottom-middle"]} BR=${w["bottom-right"]}`,

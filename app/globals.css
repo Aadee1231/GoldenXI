@@ -181,7 +181,7 @@ body {
 .goalie-card-in       { animation: goalie-card-in       0.42s cubic-bezier(0.34,1.56,0.64,1) forwards; }
 .goalie-ring-out      { animation: goalie-ring-out      0.65s ease-out     forwards; }
 
-/* ── Curved-shot ball arc (stages 4-5, visual only — save logic unchanged) ── */
+/* ── Curved-shot ball arc (visual only — save logic unchanged) ── */
 @keyframes goalie-ball-arc-l {
   0%   { transform: translateX(0); }
   45%  { transform: translateX(-32px); }
@@ -190,6 +190,28 @@ body {
 @keyframes goalie-ball-arc-r {
   0%   { transform: translateX(0); }
   45%  { transform: translateX(32px); }
+  100% { transform: translateX(0); }
+}
+@keyframes goalie-ball-arc-heavy-l {
+  0%   { transform: translateX(0); }
+  50%  { transform: translateX(-64px); }
+  100% { transform: translateX(0); }
+}
+@keyframes goalie-ball-arc-heavy-r {
+  0%   { transform: translateX(0); }
+  50%  { transform: translateX(64px); }
+  100% { transform: translateX(0); }
+}
+@keyframes goalie-ball-arc-late-l {
+  0%   { transform: translateX(0); }
+  18%  { transform: translateX(-4px); }
+  78%  { transform: translateX(-56px); }
+  100% { transform: translateX(0); }
+}
+@keyframes goalie-ball-arc-late-r {
+  0%   { transform: translateX(0); }
+  18%  { transform: translateX(4px); }
+  78%  { transform: translateX(56px); }
   100% { transform: translateX(0); }
 }
 
