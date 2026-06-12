@@ -194,7 +194,7 @@ export async function generateMetadata({ params }: PublicBracketPageProps) {
     openGraph: {
       images: [
         {
-          url: "https://goldenxi.vercel.app/og-image.png?v=3",
+          url: "https://goldenxi.vercel.app/og-image.png?v=6",
           width: 1200,
           height: 630,
           alt: "GoldenXI World Cup Bracket Challenge",
