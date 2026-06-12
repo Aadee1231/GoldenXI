@@ -50,9 +50,10 @@ export async function signIn(formData: FormData) {
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
+    const errorMessage = "Invalid credentials or user does not exist";
     const errorUrl = redirectTo
-      ? `/auth?error=${encodeURIComponent(error.message)}&tab=login&redirect=${encodeURIComponent(redirectTo)}`
-      : `/auth?error=${encodeURIComponent(error.message)}&tab=login`;
+      ? `/auth?error=${encodeURIComponent(errorMessage)}&tab=login&redirect=${encodeURIComponent(redirectTo)}`
+      : `/auth?error=${encodeURIComponent(errorMessage)}&tab=login`;
     return redirect(errorUrl);
   }
 

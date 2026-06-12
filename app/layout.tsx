@@ -16,9 +16,36 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GoldenXI — Build Your Tournament Bracket",
-  description:
-    "Create your perfect soccer tournament bracket, compete with friends in private groups, and play AI-powered soccer mini-games.",
+  metadataBase: new URL("https://goldenxi.vercel.app"),
+  title: "GoldenXI",
+  description: "Create your World Cup bracket and compete with friends.",
+  icons: {
+    icon: "/trophy.svg",
+    shortcut: "/trophy.svg",
+    apple: "/trophy.svg",
+  },
+  openGraph: {
+    title: "GoldenXI",
+    description: "Create your World Cup bracket and compete with friends.",
+    url: "https://goldenxi.vercel.app",
+    siteName: "GoldenXI",
+    images: [
+      {
+        url: "/og-image.svg",
+        width: 1200,
+        height: 630,
+        alt: "GoldenXI World Cup Bracket Challenge",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "GoldenXI",
+    description: "Create your World Cup bracket and compete with friends.",
+    images: ["/og-image.svg"],
+  },
 };
 
 export default function RootLayout({
