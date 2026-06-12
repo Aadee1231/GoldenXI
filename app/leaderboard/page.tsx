@@ -5,11 +5,24 @@ import LeaderboardRow from "@/src/components/leaderboard/LeaderboardRow";
 import LeaderboardEmpty from "@/src/components/leaderboard/LeaderboardEmpty";
 import LeaderboardTabs from "@/src/components/leaderboard/LeaderboardTabs";
 import GoalieLeaderboardSection from "@/src/components/leaderboard/GoalieLeaderboardSection";
-import TeamFlag from "@/src/components/ui/TeamFlag";
 
 export const metadata = {
   title: "Leaderboard | GoldenXI",
 };
+
+/**
+ * Controls whether the top-3 podium strip is visible on the public leaderboard.
+ *
+ * During the group stage every knockout score is 0, so the podium is
+ * meaningless. We only reveal it once at least one knockout-stage match
+ * has a confirmed result.
+ *
+ * To manually force the podium on (e.g. for a preview), change the
+ * return value to `return true`.
+ */
+function shouldShowLeaderboardPodium(knockoutStarted: boolean): boolean {
+  return knockoutStarted;
+}
 
 type SearchParams = Promise<{ tab?: string }>;
 
@@ -21,10 +34,10 @@ export default async function LeaderboardPage({
   const { tab = "bracket" } = await searchParams;
   const activeTab = tab === "goalie" ? "goalie" : "bracket";
 
-  const { data: entries, error: bracketError } =
+  const { data: entries, error: bracketError, knockoutStarted } =
     activeTab === "bracket"
       ? await fetchLeaderboard(50)
-      : { data: [] as Awaited<ReturnType<typeof fetchLeaderboard>>["data"], error: null };
+      : { data: [] as Awaited<ReturnType<typeof fetchLeaderboard>>["data"], error: null, knockoutStarted: false };
 
   const { data: goalieEntries, error: goalieError } =
     activeTab === "goalie"
@@ -72,8 +85,8 @@ export default async function LeaderboardPage({
               </p>
             )}
 
-            {/* Top-3 podium strip */}
-            {entries.length >= 3 && (
+            {/* Top-3 podium strip — only shown once knockout stage is underway */}
+            {shouldShowLeaderboardPodium(knockoutStarted) && entries.length >= 3 && (
               <div className="mb-10 grid grid-cols-3 gap-3">
                 {[entries[1], entries[0], entries[2]].map((entry, i) => {
                   const heights = ["h-28", "h-36", "h-28"];
@@ -90,18 +103,9 @@ export default async function LeaderboardPage({
                       ].join(" ")}
                     >
                       <span className="text-3xl">{medals[i]}</span>
-                      <p className="max-w-full truncate text-xs font-bold text-white">
-                        {entry.username}
+                      <p className="max-w-full truncate text-center text-xs font-bold text-white">
+                        {entry.display_name || entry.username}
                       </p>
-                      {entry.champion_name && (
-                        <TeamFlag
-                          name={entry.champion_name}
-                          code={entry.champion_code || ""}
-                          flag_emoji={entry.champion_flag}
-                          flag_code={entry.champion_code}
-                          size="md"
-                        />
-                      )}
                       <p
                         className={[
                           "text-base font-extrabold tabular-nums",

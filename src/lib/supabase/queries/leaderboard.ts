@@ -34,14 +34,14 @@ async function getActiveTournamentId(): Promise<{ id: string | null; error: stri
  */
 export async function fetchLeaderboard(
   limit = 50
-): Promise<{ data: LeaderboardEntry[]; error: string | null }> {
+): Promise<{ data: LeaderboardEntry[]; error: string | null; knockoutStarted: boolean }> {
   try {
     const supabase = await createClient();
 
     // Get active tournament
     const { id: tournamentId, error: tournamentError } = await getActiveTournamentId();
     if (tournamentError || !tournamentId) {
-      return { data: [], error: tournamentError || "No active tournament found" };
+      return { data: [], error: tournamentError || "No active tournament found", knockoutStarted: false };
     }
 
     // Get leaderboard data using RPC function
@@ -52,11 +52,11 @@ export async function fetchLeaderboard(
       });
 
     if (rpcError) {
-      return { data: [], error: rpcError.message };
+      return { data: [], error: rpcError.message, knockoutStarted: false };
     }
 
     if (!leaderboardData || leaderboardData.length === 0) {
-      return { data: [], error: null };
+      return { data: [], error: null, knockoutStarted: false };
     }
 
     // Get all bracket IDs to fetch picks and matches
@@ -150,16 +150,24 @@ export async function fetchLeaderboard(
       return 0;
     });
 
-    // Assign ranks
-    entries.forEach((entry, idx) => {
+    // Defense-in-depth: exclude private users (primary filter is in the RPC SQL)
+    const publicEntries = entries.filter((e) => e.is_public);
+
+    // Assign ranks after privacy filter
+    publicEntries.forEach((entry, idx) => {
       entry.rank = idx + 1;
     });
 
-    return { data: entries, error: null };
+    const knockoutStarted = (matches || []).some(
+      (m) => m.round !== "group" && m.completed
+    );
+
+    return { data: publicEntries, error: null, knockoutStarted };
   } catch (err) {
     return {
       data: [],
       error: err instanceof Error ? err.message : "Unknown error",
+      knockoutStarted: false,
     };
   }
 }

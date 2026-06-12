@@ -22,8 +22,10 @@ export default function LeaderboardRow({ entry }: Props) {
   const displayName = entry.display_name || entry.username || "Unknown Player";
   const initial = displayName.slice(0, 1).toUpperCase();
   const isTop3 = entry.rank <= 3;
-  // Only link to a public bracket page when the user has one shared publicly.
-  const isLinkable = Boolean(entry.is_public && entry.username);
+  // A row is linkable only when the user has a valid public bracket URL.
+  // After privacy filtering, all visible users are public — the only remaining
+  // question is whether they have a username (needed for /u/:username/bracket).
+  const isLinkable = Boolean(entry.username);
 
   const content = (
     <>
@@ -62,11 +64,18 @@ export default function LeaderboardRow({ entry }: Props) {
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold text-white">
           {displayName}
-          {isLinkable && (
-            <span className="ml-1.5 text-xs font-normal text-yellow-400/70 group-hover:text-yellow-400">
-              View bracket
-            </span>
-          )}
+          {/* Always reserve space so all rows align; dim when not clickable */}
+          <span
+            className={[
+              "ml-1.5 text-xs font-normal transition-colors",
+              isLinkable
+                ? "text-yellow-400/70 group-hover:text-yellow-400"
+                : "invisible select-none",
+            ].join(" ")}
+            aria-hidden={!isLinkable}
+          >
+            View bracket
+          </span>
         </p>
         <p className="truncate text-xs text-zinc-500">{entry.bracket_name}</p>
       </div>
@@ -111,10 +120,13 @@ export default function LeaderboardRow({ entry }: Props) {
         <p className="text-xs text-zinc-600">{timeAgo(entry.submitted_at)}</p>
       </div>
 
-      {/* Chevron affordance for linkable rows */}
-      {isLinkable && (
-        <ChevronRight className="hidden h-4 w-4 shrink-0 text-zinc-600 transition-colors group-hover:text-yellow-400 sm:block" />
-      )}
+      {/* Chevron: always reserve the slot; only visible when linkable */}
+      <ChevronRight
+        className={[
+          "hidden h-4 w-4 shrink-0 transition-colors sm:block",
+          isLinkable ? "text-zinc-600 group-hover:text-yellow-400" : "invisible",
+        ].join(" ")}
+      />
     </>
   );
 
