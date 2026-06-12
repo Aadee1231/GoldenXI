@@ -208,10 +208,11 @@ export default function AdminPage() {
   function getRoundName(round: string) {
     const names: Record<string, string> = {
       group: "Group Stage",
-      r16: "Round of 16 (1 pt)",
-      qf: "Quarterfinals (2 pts)",
-      sf: "Semifinals (4 pts)",
-      final: "Final (8 pts)",
+      r32: "Round of 32 (4 pts)",
+      r16: "Round of 16 (6 pts)",
+      qf: "Quarterfinals (8 pts)",
+      sf: "Semifinals (12 pts)",
+      final: "Final (20 pts)",
     };
     return names[round] || round;
   }
@@ -368,23 +369,35 @@ export default function AdminPage() {
           <ul className="space-y-2 text-zinc-400">
             <li className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-yellow-400" />
-              Round of 16: 1 point per correct pick
+              Group stage (exact 1st or 2nd): 3 pts per team
             </li>
             <li className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-yellow-400" />
-              Quarterfinals: 2 points per correct pick
+              Group stage (both top-2, wrong exact position): 1 pt per team
             </li>
             <li className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-yellow-400" />
-              Semifinals: 4 points per correct pick
+              Group stage (exact 3rd or 4th): 2 pts per team
             </li>
             <li className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-yellow-400" />
-              Final/Champion: 8 points per correct pick
+              <span className="h-2 w-2 rounded-full bg-blue-400" />
+              Round of 32: 4 points per correct pick
             </li>
             <li className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-zinc-500" />
-              Group stage: No points (used for bracket building only)
+              <span className="h-2 w-2 rounded-full bg-blue-400" />
+              Round of 16: 6 points per correct pick
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-blue-400" />
+              Quarterfinals: 8 points per correct pick
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-blue-400" />
+              Semifinals: 12 points per correct pick
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-blue-400" />
+              Final/Champion: 20 points per correct pick
             </li>
           </ul>
         </div>

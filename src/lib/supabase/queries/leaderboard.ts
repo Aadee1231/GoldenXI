@@ -82,6 +82,36 @@ export async function fetchLeaderboard(
       console.error("Error fetching matches:", matchesError);
     }
 
+    // Fetch teams to build team_id → team_code map (needed for group scoring)
+    const { data: teamsData } = await supabase
+      .from("teams")
+      .select("id, code")
+      .eq("tournament_id", tournamentId);
+
+    const teamCodeMap = new Map<string, string>(
+      (teamsData || []).map((t: { id: string; code: string | null }) => [t.id, t.code || ""])
+    );
+
+    // Fetch bracket_group_picks for all brackets (public brackets visible to anon)
+    const { data: groupPicksData } = await supabase
+      .from("bracket_group_picks")
+      .select("bracket_id, group_label, team_id, position")
+      .in("bracket_id", bracketIds);
+
+    type ResolvedGroupPick = { group_label: string; position: number; team_code: string };
+    const groupPicksByBracket = new Map<string, ResolvedGroupPick[]>();
+    for (const p of (groupPicksData || [])) {
+      const code = teamCodeMap.get(p.team_id) || "";
+      if (!groupPicksByBracket.has(p.bracket_id)) {
+        groupPicksByBracket.set(p.bracket_id, []);
+      }
+      groupPicksByBracket.get(p.bracket_id)!.push({
+        group_label: p.group_label,
+        position: p.position,
+        team_code: code,
+      });
+    }
+
     // Fetch which users have a public bracket so we can link their rows to the
     // public bracket page. Profiles' public fields are publicly readable.
     const userIds = leaderboardData.map((row: { user_id: string }) => row.user_id);
@@ -111,10 +141,12 @@ export async function fetchLeaderboard(
       champion_flag: string | null;
     }) => {
       const bracketPicks = (picks || []).filter(p => p.bracket_id === row.bracket_id);
-      
+      const bracketGroupPicks = groupPicksByBracket.get(row.bracket_id) || [];
+
       const { totalScore, correctPicks } = calculateBracketScore(
         bracketPicks,
-        matches || []
+        matches || [],
+        bracketGroupPicks
       );
 
       return {
@@ -228,6 +260,38 @@ export async function fetchGroupLeaderboard(
       console.error("Error fetching matches:", matchesError);
     }
 
+    // Fetch teams to build team_id → team_code map (needed for group scoring)
+    const { data: groupTeamsData } = await supabase
+      .from("teams")
+      .select("id, code")
+      .eq("tournament_id", tournamentId);
+
+    const groupTeamCodeMap = new Map<string, string>(
+      (groupTeamsData || []).map((t: { id: string; code: string | null }) => [t.id, t.code || ""])
+    );
+
+    // Fetch bracket_group_picks for all member brackets
+    const { data: memberGroupPicksData } = bracketIds.length > 0
+      ? await supabase
+          .from("bracket_group_picks")
+          .select("bracket_id, group_label, team_id, position")
+          .in("bracket_id", bracketIds)
+      : { data: [] as Array<{ bracket_id: string; group_label: string; team_id: string; position: number }> };
+
+    type ResolvedGroupPickG = { group_label: string; position: number; team_code: string };
+    const memberGroupPicksByBracket = new Map<string, ResolvedGroupPickG[]>();
+    for (const p of (memberGroupPicksData || [])) {
+      const code = groupTeamCodeMap.get(p.team_id) || "";
+      if (!memberGroupPicksByBracket.has(p.bracket_id)) {
+        memberGroupPicksByBracket.set(p.bracket_id, []);
+      }
+      memberGroupPicksByBracket.get(p.bracket_id)!.push({
+        group_label: p.group_label,
+        position: p.position,
+        team_code: code,
+      });
+    }
+
     // Get group lock time to determine eligibility status
     const { data: groupData } = await supabase
       .from("groups")
@@ -293,10 +357,12 @@ export async function fetchGroupLeaderboard(
       }
 
       const bracketPicks = (picks || []).filter(p => p.bracket_id === row.bracket_id);
-      
+      const bracketGroupPicks = memberGroupPicksByBracket.get(row.bracket_id) || [];
+
       const { totalScore, correctPicks } = calculateBracketScore(
         bracketPicks,
-        matches || []
+        matches || [],
+        bracketGroupPicks
       );
 
       // Ineligible members get 0 score for ranking

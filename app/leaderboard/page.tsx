@@ -5,23 +5,20 @@ import LeaderboardRow from "@/src/components/leaderboard/LeaderboardRow";
 import LeaderboardEmpty from "@/src/components/leaderboard/LeaderboardEmpty";
 import LeaderboardTabs from "@/src/components/leaderboard/LeaderboardTabs";
 import GoalieLeaderboardSection from "@/src/components/leaderboard/GoalieLeaderboardSection";
+import { hasProvisionalGroups } from "@/src/data/groupStandings";
+import type { LeaderboardEntry } from "@/src/types";
 
 export const metadata = {
   title: "Leaderboard | GoldenXI",
 };
 
 /**
- * Controls whether the top-3 podium strip is visible on the public leaderboard.
- *
- * During the group stage every knockout score is 0, so the podium is
- * meaningless. We only reveal it once at least one knockout-stage match
- * has a confirmed result.
- *
- * To manually force the podium on (e.g. for a preview), change the
- * return value to `return true`.
+ * Show the podium only once at least one user has accumulated any points.
+ * During early group stage with no standings entered yet, everyone is at 0 and
+ * the podium is meaningless noise, so we hide it.
  */
-function shouldShowLeaderboardPodium(knockoutStarted: boolean): boolean {
-  return knockoutStarted;
+function shouldShowLeaderboardPodium(entries: LeaderboardEntry[]): boolean {
+  return entries.some((e) => e.total_score > 0);
 }
 
 type SearchParams = Promise<{ tab?: string }>;
@@ -34,10 +31,10 @@ export default async function LeaderboardPage({
   const { tab = "bracket" } = await searchParams;
   const activeTab = tab === "goalie" ? "goalie" : "bracket";
 
-  const { data: entries, error: bracketError, knockoutStarted } =
+  const { data: entries, error: bracketError } =
     activeTab === "bracket"
       ? await fetchLeaderboard(75)
-      : { data: [] as Awaited<ReturnType<typeof fetchLeaderboard>>["data"], error: null, knockoutStarted: false };
+      : { data: [] as Awaited<ReturnType<typeof fetchLeaderboard>>["data"], error: null };
 
   const { data: goalieEntries, error: goalieError } =
     activeTab === "goalie"
@@ -82,8 +79,8 @@ export default async function LeaderboardPage({
               </p>
             )}
 
-            {/* Top-3 podium strip — only shown once knockout stage is underway */}
-            {shouldShowLeaderboardPodium(knockoutStarted) && entries.length >= 3 && (
+            {/* Top-3 podium strip — shown once at least one user has points */}
+            {shouldShowLeaderboardPodium(entries) && entries.length >= 3 && (
               <div className="mb-10 grid grid-cols-3 gap-3">
                 {[entries[1], entries[0], entries[2]].map((entry, i) => {
                   const heights = ["h-40", "h-44", "h-40"];
@@ -140,12 +137,21 @@ export default async function LeaderboardPage({
               </div>
             )}
 
-            {/* Footer note */}
+            {/* Provisional note + footer */}
             {entries.length > 0 && (
-              <div className="mt-10 rounded-lg border border-blue-400/10 bg-blue-400/5 p-4 text-center">
-                <p className="text-xs leading-relaxed text-zinc-500">
-                  Scoring begins when tournament results are entered. Correct picks earn more points in later rounds.
-                </p>
+              <div className="mt-10 space-y-3">
+                {hasProvisionalGroups() && (
+                  <div className="rounded-lg border border-yellow-400/15 bg-yellow-400/5 p-4 text-center">
+                    <p className="text-xs leading-relaxed text-yellow-400/80">
+                      ⚡ Live group-stage points are provisional and may change as standings update.
+                    </p>
+                  </div>
+                )}
+                <div className="rounded-lg border border-blue-400/10 bg-blue-400/5 p-4 text-center">
+                  <p className="text-xs leading-relaxed text-zinc-500">
+                    Group stage: up to 3 pts per team · R32 4 · R16 6 · QF 8 · SF 12 · Final 20
+                  </p>
+                </div>
               </div>
             )}
           </>

@@ -1,27 +1,29 @@
 import { createClient } from "@/src/lib/supabase/client";
 import type { Match, MatchRound, BracketPick } from "@/src/types";
+import { groupStandings } from "@/src/data/groupStandings";
 
 /**
  * BRACKET SCORING LOGIC
  * =====================
  * 
- * Points are awarded based on the tournament round:
- * - Round of 16 (r16): 1 point per correct pick
- * - Quarterfinals (qf): 2 points per correct pick
- * - Semifinals (sf): 4 points per correct pick
- * - Final (final): 8 points for champion pick
+ * Knockout round points per correct pick:
+ * - Round of 32 (r32):   4 points
+ * - Round of 16 (r16):   6 points
+ * - Quarterfinals (qf):  8 points
+ * - Semifinals (sf):    12 points
+ * - Final (final):      20 points
  * 
- * Group stage matches do not award points (used for bracket progression only).
+ * Group-stage picks are scored separately via calculateGroupScore().
  */
 
-/** Maps each round to its point value */
+/** Maps each knockout round to its point value */
 const ROUND_POINTS: Record<MatchRound, number> = {
-  group: 0,   // Group stage: no points yet (will be scored via group_picks table)
-  r32: 1,     // Round of 32: 1 point
-  r16: 2,     // Round of 16: 2 points
-  qf: 4,      // Quarterfinals: 4 points
-  sf: 8,      // Semifinals: 8 points
-  final: 16,  // Final/Champion: 16 points
+  group: 0,    // Group stage: scored via bracket_group_picks, not matches
+  r32: 4,      // Round of 32: 4 points
+  r16: 6,      // Round of 16: 6 points
+  qf: 8,       // Quarterfinals: 8 points
+  sf: 12,      // Semifinals: 12 points
+  final: 20,   // Final/Champion: 20 points
 };
 
 /**
@@ -182,21 +184,72 @@ export function getRoundPointsLabel(round: MatchRound): string {
 }
 
 /**
- * Calculate total score and correct picks for a bracket (read-only, no DB updates)
- * Used for leaderboard display
+ * Calculate group-stage points for a single bracket.
+ * Compares predicted positions against the live standings in groupStandings.ts.
+ *
+ * Scoring:
+ * - Exact 1st or 2nd: 3 pts
+ * - Both top-2 but wrong exact position: 1 pt
+ * - Exact 3rd: 2 pts
+ * - Exact 4th: 2 pts
+ * - Otherwise: 0 pts
+ */
+export function calculateGroupScore(
+  groupPicks: Array<{ group_label: string; position: number; team_code: string }>
+): number {
+  let score = 0;
+
+  const byGroup: Record<string, Array<{ position: number; team_code: string }>> = {};
+  for (const p of groupPicks) {
+    if (!byGroup[p.group_label]) byGroup[p.group_label] = [];
+    byGroup[p.group_label].push({ position: p.position, team_code: p.team_code });
+  }
+
+  for (const [groupLabel, picks] of Object.entries(byGroup)) {
+    const standing = groupStandings[groupLabel];
+    if (!standing || standing.standings.length === 0) continue;
+
+    const actualPos: Record<string, number> = {};
+    for (const s of standing.standings) {
+      actualPos[s.teamCode] = s.position;
+    }
+
+    for (const pick of picks) {
+      const actual = actualPos[pick.team_code];
+      if (actual === undefined) continue;
+
+      const predicted = pick.position;
+
+      if (predicted === actual) {
+        score += predicted <= 2 ? 3 : 2;
+      } else if (predicted <= 2 && actual <= 2) {
+        score += 1;
+      }
+    }
+  }
+
+  return score;
+}
+
+/**
+ * Calculate total score and correct picks for a bracket (read-only, no DB updates).
+ * Includes both knockout scoring (from matches) and group-stage scoring (from groupStandings.ts).
+ * Used for leaderboard display.
  */
 export function calculateBracketScore(
   picks: Array<{ picked_team_id: string | null; match_id: string }>,
-  matches: Array<{ id: string; round: MatchRound; completed: boolean; winner_id: string | null }>
+  matches: Array<{ id: string; round: MatchRound; completed: boolean; winner_id: string | null }>,
+  groupPicks?: Array<{ group_label: string; position: number; team_code: string }>
 ): {
   totalScore: number;
   correctPicks: number;
   possibleScore: number;
   maxScore: number;
+  groupScore: number;
 } {
   const matchMap = new Map(matches.map(m => [m.id, m]));
   
-  let totalScore = 0;
+  let knockoutScore = 0;
   let correctPicks = 0;
   let possibleScore = 0;
 
@@ -204,29 +257,29 @@ export function calculateBracketScore(
     const match = matchMap.get(pick.match_id);
     if (!match) continue;
 
-    // Calculate possible score from completed matches
     if (match.completed && match.winner_id) {
       const roundPoints = ROUND_POINTS[match.round];
       possibleScore += roundPoints;
 
-      // Check if pick is correct
       if (pick.picked_team_id === match.winner_id) {
-        totalScore += roundPoints;
+        knockoutScore += roundPoints;
         correctPicks++;
       }
     }
   }
 
-  // Max possible score (knockout only): 16 R32 + 8 R16 + 4 QF + 2 SF + 1 Final
-  // = 16*1 + 8*2 + 4*4 + 2*8 + 1*16 = 16+16+16+16+16 = 80 points
-  // Note: Group stage picks (44 points) scored separately via bracket_group_picks
-  // Total max with groups: 80 + 44 = 124 points
-  const maxScore = 80; // Knockout bracket only (legacy compatibility)
+  const groupScore = groupPicks ? calculateGroupScore(groupPicks) : 0;
+  const totalScore = knockoutScore + groupScore;
+
+  // Max knockout: 16×r32 + 8×r16 + 4×qf + 2×sf + 1×final
+  // = 16×4 + 8×6 + 4×8 + 2×12 + 1×20 = 64+48+32+24+20 = 188
+  const maxScore = 188;
 
   return {
     totalScore,
     correctPicks,
     possibleScore,
     maxScore,
+    groupScore,
   };
 }
