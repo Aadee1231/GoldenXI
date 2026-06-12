@@ -19,8 +19,8 @@ function formatReaction(ms: number | null): string {
   return `${ms}ms`;
 }
 
-function formatAccuracy(saves: number, shotsFaced: number): string {
-  if (shotsFaced === 0) return "0%";
+function formatAccuracy(saves: number, shotsFaced: number | null): string {
+  if (!shotsFaced || shotsFaced === 0) return "0%";
   return `${Math.round((saves / shotsFaced) * 100)}%`;
 }
 

@@ -28,11 +28,24 @@ export default function InvitePageContent({
     setIsJoining(true);
     setError(null);
 
-    const result = await joinGroupByCode(joinCode);
+    console.log("[JoinGroup] Attempting to join with code:", joinCode);
+
+    let result;
+    try {
+      result = await joinGroupByCode(joinCode);
+      console.log("[JoinGroup] RPC result:", result);
+    } catch (err) {
+      console.error("[JoinGroup] Unexpected error:", err);
+      setError("An unexpected error occurred. Please try again.");
+      setIsJoining(false);
+      return;
+    }
 
     if (result.success && result.groupId) {
+      console.log("[JoinGroup] Success, redirecting to /groups/" + result.groupId);
       router.push(`/groups/${result.groupId}`);
     } else {
+      console.error("[JoinGroup] Failed:", result.errorCode, result.errorMessage);
       setError(result.errorMessage || "Failed to join group");
       setIsJoining(false);
     }

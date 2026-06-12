@@ -39,7 +39,7 @@ export async function joinGroupByCode(
   });
 
   if (error) {
-    console.error("Error joining group:", error);
+    console.error("[joinGroupByCode] Supabase RPC error:", error.code, error.message, error.details, error.hint);
     return {
       success: false,
       errorCode: "rpc_error",
@@ -47,7 +47,8 @@ export async function joinGroupByCode(
     };
   }
 
-  if (!data || data.length === 0) {
+  if (!data) {
+    console.error("[joinGroupByCode] RPC returned no data");
     return {
       success: false,
       errorCode: "unknown_error",
@@ -55,7 +56,8 @@ export async function joinGroupByCode(
     };
   }
 
-  const result = data[0];
+  const result = data as { success: boolean; group_id?: string; error_code?: string; error_message?: string };
+  console.log("[joinGroupByCode] RPC result:", result);
 
   if (!result.success) {
     return {
