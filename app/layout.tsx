@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "GoldenXI",
     description: "Create your World Cup bracket and compete with friends.",
-    images: ["https://goldenxi.vercel.app/og-image.png?v=4"],
+    images: ["https://goldenxi.vercel.app/og-image.png?v=6"],
   },
 };
 

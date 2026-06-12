@@ -64,6 +64,14 @@ function InviteSkeleton() {
   );
 }
 
+const OG_IMAGE = {
+  url: "https://goldenxi.vercel.app/og-image.png?v=6",
+  width: 1200,
+  height: 630,
+  alt: "GoldenXI World Cup Bracket Challenge",
+  type: "image/png",
+};
+
 export async function generateMetadata({ params }: InvitePageProps) {
   const { code } = await params;
   const { preview } = await getInvitePreview(code);
@@ -71,34 +79,45 @@ export async function generateMetadata({ params }: InvitePageProps) {
   if (!preview) {
     return {
       title: "Join Group | GoldenXI",
-      description: "Join a GoldenXI bracket group",
+      description: "Join a GoldenXI bracket group. Make your World Cup picks and compete with friends.",
       openGraph: {
-        images: [
-          {
-            url: "https://goldenxi.vercel.app/og-image.png?v=6",
-            width: 1200,
-            height: 630,
-            alt: "GoldenXI World Cup Bracket Challenge",
-            type: "image/png",
-          },
-        ],
+        title: "Join Group | GoldenXI",
+        description: "Join a GoldenXI bracket group. Make your World Cup picks and compete with friends.",
+        url: "https://goldenxi.vercel.app",
+        siteName: "GoldenXI",
+        type: "website",
+        locale: "en_US",
+        images: [OG_IMAGE],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: "Join Group | GoldenXI",
+        description: "Join a GoldenXI bracket group. Make your World Cup picks and compete with friends.",
+        images: ["https://goldenxi.vercel.app/og-image.png?v=6"],
       },
     };
   }
 
+  const title = `Join ${preview.group_name} | GoldenXI`;
+  const description = `You've been invited to join ${preview.group_name}. Make your World Cup picks and compete with friends.`;
+
   return {
-    title: `Join ${preview.group_name} | GoldenXI`,
-    description: `You've been invited to join ${preview.group_name}. Make your World Cup picks and compete with friends.`,
+    title,
+    description,
     openGraph: {
-      images: [
-        {
-          url: "https://goldenxi.vercel.app/og-image.png?v=4",
-          width: 1200,
-          height: 630,
-          alt: "GoldenXI World Cup Bracket Challenge",
-          type: "image/png",
-        },
-      ],
+      title,
+      description,
+      url: `https://goldenxi.vercel.app/join/${code}`,
+      siteName: "GoldenXI",
+      type: "website",
+      locale: "en_US",
+      images: [OG_IMAGE],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: ["https://goldenxi.vercel.app/og-image.png?v=6"],
     },
   };
 }
