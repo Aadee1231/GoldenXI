@@ -31,10 +31,11 @@ export const metadata: Metadata = {
     siteName: "GoldenXI",
     images: [
       {
-        url: "/og-image.svg",
+        url: "https://goldenxi.vercel.app/og-image.png",
         width: 1200,
         height: 630,
         alt: "GoldenXI World Cup Bracket Challenge",
+        type: "image/png",
       },
     ],
     locale: "en_US",
@@ -44,7 +45,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "GoldenXI",
     description: "Create your World Cup bracket and compete with friends.",
-    images: ["/og-image.svg"],
+    images: ["https://goldenxi.vercel.app/og-image.png"],
   },
 };
 

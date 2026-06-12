@@ -72,12 +72,34 @@ export async function generateMetadata({ params }: InvitePageProps) {
     return {
       title: "Join Group | GoldenXI",
       description: "Join a GoldenXI bracket group",
+      openGraph: {
+        images: [
+          {
+            url: "https://goldenxi.vercel.app/og-image.png",
+            width: 1200,
+            height: 630,
+            alt: "GoldenXI World Cup Bracket Challenge",
+            type: "image/png",
+          },
+        ],
+      },
     };
   }
 
   return {
     title: `Join ${preview.group_name} | GoldenXI`,
     description: `You've been invited to join ${preview.group_name}. Make your World Cup picks and compete with friends.`,
+    openGraph: {
+      images: [
+        {
+          url: "https://goldenxi.vercel.app/og-image.png",
+          width: 1200,
+          height: 630,
+          alt: "GoldenXI World Cup Bracket Challenge",
+          type: "image/png",
+        },
+      ],
+    },
   };
 }
 

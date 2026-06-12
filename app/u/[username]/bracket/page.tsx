@@ -191,6 +191,17 @@ export async function generateMetadata({ params }: PublicBracketPageProps) {
   return {
     title: `${username}'s Bracket | GoldenXI`,
     description: `Check out ${username}'s World Cup bracket and make your own picks on GoldenXI.`,
+    openGraph: {
+      images: [
+        {
+          url: "https://goldenxi.vercel.app/og-image.png",
+          width: 1200,
+          height: 630,
+          alt: "GoldenXI World Cup Bracket Challenge",
+          type: "image/png",
+        },
+      ],
+    },
   };
 }
 
