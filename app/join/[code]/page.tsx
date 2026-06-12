@@ -75,7 +75,7 @@ export async function generateMetadata({ params }: InvitePageProps) {
       openGraph: {
         images: [
           {
-            url: "https://goldenxi.vercel.app/og-image.png",
+            url: "https://goldenxi.vercel.app/og-image.png?v=3",
             width: 1200,
             height: 630,
             alt: "GoldenXI World Cup Bracket Challenge",
@@ -92,7 +92,7 @@ export async function generateMetadata({ params }: InvitePageProps) {
     openGraph: {
       images: [
         {
-          url: "https://goldenxi.vercel.app/og-image.png",
+          url: "https://goldenxi.vercel.app/og-image.png?v=3",
           width: 1200,
           height: 630,
           alt: "GoldenXI World Cup Bracket Challenge",
