@@ -36,7 +36,7 @@ export default async function LeaderboardPage({
 
   const { data: entries, error: bracketError, knockoutStarted } =
     activeTab === "bracket"
-      ? await fetchLeaderboard(50)
+      ? await fetchLeaderboard(75)
       : { data: [] as Awaited<ReturnType<typeof fetchLeaderboard>>["data"], error: null, knockoutStarted: false };
 
   const { data: goalieEntries, error: goalieError } =
@@ -61,10 +61,7 @@ export default async function LeaderboardPage({
             Global Rankings
           </div>
           <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl">
-            Leader<span className="relative">
-              <span className="absolute inset-0 blur-xl bg-gradient-to-r from-blue-400 to-yellow-400 opacity-30" />
-              <span className="relative bg-gradient-to-r from-blue-400 to-yellow-400 bg-clip-text text-transparent">board</span>
-            </span>
+            Leaderboard
           </h1>
           <p className="mt-5 text-sm leading-relaxed text-zinc-400">
             {activeTab === "bracket"
@@ -89,7 +86,7 @@ export default async function LeaderboardPage({
             {shouldShowLeaderboardPodium(knockoutStarted) && entries.length >= 3 && (
               <div className="mb-10 grid grid-cols-3 gap-3">
                 {[entries[1], entries[0], entries[2]].map((entry, i) => {
-                  const heights = ["h-28", "h-36", "h-28"];
+                  const heights = ["h-40", "h-44", "h-40"];
                   const medals = ["🥈", "🥇", "🥉"];
                   return (
                     <div

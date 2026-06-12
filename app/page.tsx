@@ -33,6 +33,7 @@ const features = [
     description:
       "Rank every group, choose the best third-place teams, and predict the full road from the Round of 32 to the champion.",
     color: "gold" as const,
+    href: "/bracket",
   },
   {
     icon: Users,
@@ -40,23 +41,23 @@ const features = [
     description:
       "Create invite-only groups for friends, classmates, coworkers, or family and compete for bragging rights.",
     color: "green" as const,
-  },
-  {
-    icon: Zap,
-    title: "Juggle Counter AI",
-    description:
-      "Coming soon: use your camera to count keep-ups and climb the skill leaderboard.",
-    badge: "Coming Soon",
-    color: "blue" as const,
+    href: "/groups",
   },
   {
     icon: ShieldCheck,
     title: "Goalkeeper Reaction",
     description:
       "Test your reflexes in a fast penalty-save challenge. Dive left, center, or right before the ball beats you.",
-    badge: "New",
     color: "red" as const,
     href: "/goalie",
+  },
+  {
+    icon: Star,
+    title: "Celebration Pose Off",
+    description:
+      "Coming soon: Strike your best iconic celebration poses and challenge friends to see who has the most flair.",
+    color: "blue" as const,
+    badge: "Coming Soon",
   },
 ] as const;
 
@@ -75,12 +76,8 @@ export default function HomePage() {
         <PitchGrassPattern />
         <SoccerPitchOverlay />
         <StadiumFloodlightGlow />
-        <TournamentColorBeams />
-        <GoldSpotlight />
-        <RadarGradient />
         <SoccerBallPattern />
         <FloatingSoccerBalls />
-        <TournamentParticles />
 
         <div className="relative z-10 mx-auto max-w-4xl">
           {/* Badge */}
@@ -93,12 +90,10 @@ export default function HomePage() {
 
           {/* Headline */}
           <h1 className="mb-6 text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
-            <span className="text-white">Pick the Groups.</span>{" "}
-            <span className="bg-gradient-to-r from-blue-400 to-blue-500 bg-clip-text text-transparent">Build the Bracket.</span>{" "}
             <span className="relative inline-block">
               <span className="absolute inset-0 blur-xl bg-gradient-to-r from-yellow-400 to-yellow-500 opacity-30" />
               <span className="relative bg-gradient-to-r from-yellow-300 to-yellow-500 bg-clip-text text-transparent">
-                Crown Your Champion.
+                Crown Your Champion
               </span>
             </span>
           </h1>
@@ -177,19 +172,6 @@ export default function HomePage() {
 
       {/* ── How It Works ── */}
       <section className="relative border-t border-white/10 px-4 py-24 sm:px-6 lg:px-8">
-        {/* Tournament background */}
-        <div className="pointer-events-none absolute inset-0 opacity-[0.04]" aria-hidden="true">
-          <div className="absolute left-1/2 top-1/2 h-px w-full -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-transparent via-white to-transparent" />
-          <div className="absolute left-1/2 top-1/2 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white" />
-          <div className="absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white" />
-        </div>
-        
-        {/* Color glows */}
-        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-          <div className="absolute left-1/4 top-1/2 h-64 w-64 -translate-y-1/2 rounded-full bg-red-500/5 blur-3xl" />
-          <div className="absolute right-1/4 top-1/2 h-64 w-64 -translate-y-1/2 rounded-full bg-green-500/5 blur-3xl" />
-        </div>
-
         <div className="relative mx-auto max-w-5xl text-center">
           <h2 className="mb-16 text-3xl font-extrabold text-white sm:text-4xl">
             Start your run in{" "}
@@ -246,7 +228,7 @@ export default function HomePage() {
               href="/bracket"
               className="group inline-flex items-center gap-2 rounded-xl bg-yellow-400 px-10 py-4 text-base font-bold text-black shadow-lg shadow-yellow-400/20 transition-all hover:bg-yellow-300 hover:shadow-yellow-400/40"
             >
-              Start for free
+              Start now
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
           </div>

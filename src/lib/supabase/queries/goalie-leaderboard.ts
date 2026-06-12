@@ -9,7 +9,8 @@ import { createClient } from "@/src/lib/supabase/server";
 export type GoalieCameraLeaderboardRow = {
   id: string;
   user_id: string;
-  display_name: string;
+  display_name: string | null;
+  username: string | null;
   score: number;
   saves: number;
   goals_allowed: number;

@@ -63,7 +63,7 @@ export default function GoalieLeaderboardSection({ entries, error }: Props) {
       {top3.length >= 3 && (
         <div className="mb-10 grid grid-cols-3 gap-3">
           {[top3[1], top3[0], top3[2]].map((entry, i) => {
-            const heights = ["h-28", "h-36", "h-28"];
+            const heights = ["h-40", "h-44", "h-40"];
             const medals = ["🥈", "🥇", "🥉"];
             return (
               <div
@@ -78,7 +78,7 @@ export default function GoalieLeaderboardSection({ entries, error }: Props) {
               >
                 <span className="text-3xl">{medals[i]}</span>
                 <p className="max-w-full truncate text-xs font-bold text-white">
-                  {entry.display_name}
+                  {entry.display_name || entry.username || "Unknown Player"}
                 </p>
                 <p
                   className={[
@@ -87,9 +87,6 @@ export default function GoalieLeaderboardSection({ entries, error }: Props) {
                   ].join(" ")}
                 >
                   {entry.score.toLocaleString()}
-                </p>
-                <p className="text-[10px] text-zinc-500">
-                  {entry.saves}sv · {formatReaction(entry.avg_reaction_ms)}
                 </p>
               </div>
             );
@@ -113,7 +110,8 @@ export default function GoalieLeaderboardSection({ entries, error }: Props) {
         {entries.map((entry) => {
           const rank = entry.rank ?? 0;
           const isTop3 = rank <= 3;
-          const initial = entry.display_name.slice(0, 1).toUpperCase();
+          const displayName = entry.display_name || entry.username || "Unknown Player";
+          const initial = displayName.slice(0, 1).toUpperCase();
 
           return (
             <div
@@ -147,7 +145,7 @@ export default function GoalieLeaderboardSection({ entries, error }: Props) {
                   {initial}
                 </div>
                 <p className="truncate text-sm font-semibold text-white">
-                  {entry.display_name}
+                  {entry.display_name || entry.username || "Unknown Player"}
                 </p>
               </div>
 

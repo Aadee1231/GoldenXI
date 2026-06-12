@@ -6,14 +6,17 @@
 -- Safe to re-run (uses CREATE OR REPLACE).
 -- ============================================================
 
+DROP VIEW IF EXISTS public.goalie_camera_global_leaderboard;
+
 -- ── 1. Global camera leaderboard ──────────────────────────
 -- One row per user (enforced by the unique constraint on
 -- goalie_scores(user_id, mode)), camera mode only, ranked.
-CREATE OR REPLACE VIEW public.goalie_camera_global_leaderboard AS
+CREATE VIEW public.goalie_camera_global_leaderboard AS
 SELECT
   gs.id,
   gs.user_id,
-  gs.display_name,
+  COALESCE(p.display_name, gs.display_name, p.username) AS display_name,
+  p.username,
   gs.score,
   gs.saves,
   gs.goals_allowed,
@@ -32,18 +35,22 @@ SELECT
       gs.created_at      ASC
   ) AS rank
 FROM public.goalie_scores gs
+LEFT JOIN public.profiles p ON p.id = gs.user_id
 WHERE gs.mode = 'camera';
 
 GRANT SELECT ON public.goalie_camera_global_leaderboard TO anon, authenticated;
 
+DROP VIEW IF EXISTS public.goalie_camera_group_leaderboard;
+
 -- ── 2. Per-group camera leaderboard ───────────────────────
 -- Camera mode scores joined with group membership so the
 -- application can filter by group_id.
-CREATE OR REPLACE VIEW public.goalie_camera_group_leaderboard AS
+CREATE VIEW public.goalie_camera_group_leaderboard AS
 SELECT
   gs.id,
   gs.user_id,
-  gs.display_name,
+  COALESCE(p.display_name, gs.display_name, p.username) AS display_name,
+  p.username,
   gs.score,
   gs.saves,
   gs.goals_allowed,
@@ -55,6 +62,7 @@ SELECT
   gs.created_at,
   gm.group_id
 FROM public.goalie_scores gs
+LEFT JOIN public.profiles p ON p.id = gs.user_id
 JOIN public.group_members gm ON gs.user_id = gm.user_id
 WHERE gs.mode = 'camera';
 
