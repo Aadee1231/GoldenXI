@@ -78,14 +78,14 @@ export default function BracketWizard() {
     
     // TASK 1: Load all saved data
     const { data: savedGroupPicks } = await supabase
-      .from("group_picks")
+      .from("bracket_group_picks")
       .select("*")
       .eq("bracket_id", bracket.id)
       .order("group_label", { ascending: true })
       .order("position", { ascending: true });
 
     const { data: savedThirdPlacePicks } = await supabase
-      .from("third_place_picks")
+      .from("bracket_third_place_picks")
       .select("team_id")
       .eq("bracket_id", bracket.id);
 

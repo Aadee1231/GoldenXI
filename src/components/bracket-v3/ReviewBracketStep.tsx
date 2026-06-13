@@ -197,8 +197,8 @@ export default function ReviewBracketStep({ wizardState, onRegisterSave, onNavig
     setActionLoading(true);
     const supabase = createClient();
 
-    await supabase.from("group_picks").delete().eq("bracket_id", bracketId);
-    await supabase.from("third_place_picks").delete().eq("bracket_id", bracketId);
+    await supabase.from("bracket_group_picks").delete().eq("bracket_id", bracketId);
+    await supabase.from("bracket_third_place_picks").delete().eq("bracket_id", bracketId);
     await supabase.from("bracket_picks").delete().eq("bracket_id", bracketId);
 
     setShowResetConfirm(false);
