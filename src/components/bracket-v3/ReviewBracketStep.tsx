@@ -412,6 +412,10 @@ export default function ReviewBracketStep({ wizardState, onRegisterSave, onNavig
         )}
       </div>
 
+      <p className="mt-4 text-xs text-gray-500">
+        By submitting a bracket, your display name and picks may appear publicly on the leaderboard.
+      </p>
+
       {showResetConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
           <div className="bg-gray-900 rounded-lg border border-red-600/30 p-6 max-w-md w-full">

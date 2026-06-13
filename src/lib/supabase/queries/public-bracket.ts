@@ -65,11 +65,11 @@ export async function getPublicBracketRounds(
     console.log("RPC not available, using fallback for public bracket picks");
     const { data: profile } = await supabase
       .from("profiles")
-      .select("id, public_bracket")
+      .select("id")
       .eq("username", username)
       .single();
 
-    if (!profile || !profile.public_bracket) {
+    if (!profile) {
       return null;
     }
 
@@ -221,11 +221,11 @@ export async function getPublicBracketPickCounts(
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, public_bracket")
+    .select("id")
     .eq("username", username)
     .single();
 
-  if (!profile || !profile.public_bracket) {
+  if (!profile) {
     return null;
   }
 
