@@ -8,6 +8,8 @@ import GoalieLeaderboardSection from "@/src/components/leaderboard/GoalieLeaderb
 import { hasProvisionalGroups } from "@/src/data/groupStandings";
 import type { LeaderboardEntry } from "@/src/types";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Leaderboard | GoldenXI",
 };
