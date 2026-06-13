@@ -54,15 +54,7 @@ export const groupStandings: Record<string, GroupStanding> = {
     ],
   },
 
-  B: {
-    isFinal: false,
-    standings: [
-      { teamCode: "CAN", position: 1 },
-      { teamCode: "BIH", position: 2 },
-      { teamCode: "SUI", position: 3 },
-      { teamCode: "QAT", position: 4 },
-    ],
-  },
+
   // Add groups here as their real results come in.
   // Groups not listed give 0 provisional points.
 };
