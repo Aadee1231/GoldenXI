@@ -74,7 +74,7 @@ export default function GoalieGroupLeaderboard({ entries, currentUserId }: Props
               {/* Name */}
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-white truncate">
-                  {entry.display_name || entry.username || "Unknown Player"}
+                  {entry.display_name || "Unknown Player"}
                   {isCurrentUser && (
                     <span className="ml-2 text-xs text-zinc-500">(you)</span>
                   )}

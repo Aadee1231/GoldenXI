@@ -174,7 +174,7 @@ async function GroupDetailContent({ groupId, standingsTab }: { groupId: string; 
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-white">
-                        {member.profile?.username || `User ${member.user_id.slice(0, 8)}`}
+                        {member.profile?.display_name || `User ${member.user_id.slice(0, 8)}`}
                       </span>
                       {member.user_id === group.created_by && (
                         <span className="flex items-center gap-1 rounded-full bg-yellow-400/20 px-2 py-0.5 text-xs font-medium text-yellow-400">
