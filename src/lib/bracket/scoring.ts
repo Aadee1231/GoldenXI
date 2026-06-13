@@ -7,7 +7,7 @@ import { groupStandings } from "@/src/data/groupStandings";
  * =====================
  * 
  * Knockout round points per correct pick:
- * - Round of 32 (r32):   4 points
+ * - Round of 32 (r32):   1 point
  * - Round of 16 (r16):   6 points
  * - Quarterfinals (qf):  8 points
  * - Semifinals (sf):    12 points
@@ -19,7 +19,7 @@ import { groupStandings } from "@/src/data/groupStandings";
 /** Maps each knockout round to its point value */
 const ROUND_POINTS: Record<MatchRound, number> = {
   group: 0,    // Group stage: scored via bracket_group_picks, not matches
-  r32: 4,      // Round of 32: 4 points
+  r32: 4,      // Round of 32: 4 point
   r16: 6,      // Round of 16: 6 points
   qf: 8,       // Quarterfinals: 8 points
   sf: 12,      // Semifinals: 12 points

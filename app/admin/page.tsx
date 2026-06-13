@@ -208,7 +208,7 @@ export default function AdminPage() {
   function getRoundName(round: string) {
     const names: Record<string, string> = {
       group: "Group Stage",
-      r32: "Round of 32 (4 pts)",
+      r32: "Round of 32 (1 pt)",
       r16: "Round of 16 (6 pts)",
       qf: "Quarterfinals (8 pts)",
       sf: "Semifinals (12 pts)",
@@ -381,7 +381,7 @@ export default function AdminPage() {
             </li>
             <li className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-blue-400" />
-              Round of 32: 4 points per correct pick
+              Round of 32: 1 point per correct pick
             </li>
             <li className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-blue-400" />
