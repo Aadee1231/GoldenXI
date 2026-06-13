@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/src/lib/supabase/server";
+import { createAdminClient } from "@/src/lib/supabase/admin";
 import type { LeaderboardEntry } from "@/src/types";
 import { calculateBracketScore } from "@/src/lib/bracket/scoring";
 
@@ -36,7 +37,10 @@ export async function fetchLeaderboard(
   limit = 50
 ): Promise<{ data: LeaderboardEntry[]; error: string | null; knockoutStarted: boolean }> {
   try {
+    // Use session client for the RPC (SECURITY DEFINER anyway) and admin client
+    // for all direct table reads so RLS never silently hides any submitted bracket's data.
     const supabase = await createClient();
+    const admin = createAdminClient();
 
     // Get active tournament
     const { id: tournamentId, error: tournamentError } = await getActiveTournamentId();
@@ -44,7 +48,7 @@ export async function fetchLeaderboard(
       return { data: [], error: tournamentError || "No active tournament found", knockoutStarted: false };
     }
 
-    // Get leaderboard data using RPC function
+    // Get leaderboard roster via RPC (SECURITY DEFINER — returns all submitted brackets)
     const { data: leaderboardData, error: rpcError } = await supabase
       .rpc("get_global_leaderboard", {
         tournament_id_param: tournamentId,
@@ -62,41 +66,49 @@ export async function fetchLeaderboard(
     // Get all bracket IDs to fetch picks and matches
     const bracketIds = leaderboardData.map((row: { bracket_id: string }) => row.bracket_id);
 
-    // Fetch all picks for these brackets
-    const { data: picks, error: picksError } = await supabase
+    // --- All scoring queries use the admin client to bypass RLS ---
+    // This ensures every submitted bracket's picks are always visible,
+    // regardless of public_bracket flag or the current user's session.
+
+    const { data: picks, error: picksError } = await admin
       .from("bracket_picks")
       .select("bracket_id, match_id, picked_team_id")
       .in("bracket_id", bracketIds);
 
     if (picksError) {
-      console.error("Error fetching picks:", picksError);
+      console.error("[leaderboard] Error fetching bracket_picks:", picksError.message);
     }
 
-    // Fetch all matches for the tournament
-    const { data: matches, error: matchesError } = await supabase
+    const { data: matches, error: matchesError } = await admin
       .from("matches")
       .select("id, round, completed, winner_id")
       .eq("tournament_id", tournamentId);
 
     if (matchesError) {
-      console.error("Error fetching matches:", matchesError);
+      console.error("[leaderboard] Error fetching matches:", matchesError.message);
     }
 
-    // Fetch teams to build team_id → team_code map (needed for group scoring)
-    const { data: teamsData } = await supabase
+    const { data: teamsData, error: teamsError } = await admin
       .from("teams")
       .select("id, code")
       .eq("tournament_id", tournamentId);
+
+    if (teamsError) {
+      console.error("[leaderboard] Error fetching teams:", teamsError.message);
+    }
 
     const teamCodeMap = new Map<string, string>(
       (teamsData || []).map((t: { id: string; code: string | null }) => [t.id, t.code || ""])
     );
 
-    // Fetch bracket_group_picks for all brackets (public brackets visible to anon)
-    const { data: groupPicksData } = await supabase
+    const { data: groupPicksData, error: groupPicksError } = await admin
       .from("bracket_group_picks")
       .select("bracket_id, group_label, team_id, position")
       .in("bracket_id", bracketIds);
+
+    if (groupPicksError) {
+      console.error("[leaderboard] Error fetching bracket_group_picks:", groupPicksError.message);
+    }
 
     type ResolvedGroupPick = { group_label: string; position: number; team_code: string };
     const groupPicksByBracket = new Map<string, ResolvedGroupPick[]>();
@@ -195,6 +207,7 @@ export async function fetchGroupLeaderboard(
 ): Promise<{ data: LeaderboardEntry[]; error: string | null }> {
   try {
     const supabase = await createClient();
+    const admin = createAdminClient();
 
     // Get active tournament
     const { id: tournamentId, error: tournamentError } = await getActiveTournamentId();
@@ -222,43 +235,49 @@ export async function fetchGroupLeaderboard(
       .map((row: { bracket_id: string | null }) => row.bracket_id)
       .filter((id: string | null): id is string => id !== null);
 
-    // Fetch picks for brackets that exist
-    const { data: picks, error: picksError } = await supabase
+    // --- All scoring queries use admin client to bypass RLS ---
+
+    const { data: picks, error: picksError } = await admin
       .from("bracket_picks")
       .select("bracket_id, match_id, picked_team_id")
       .in("bracket_id", bracketIds);
 
     if (picksError) {
-      console.error("Error fetching picks:", picksError);
+      console.error("[group leaderboard] Error fetching bracket_picks:", picksError.message);
     }
 
-    // Fetch all matches for the tournament
-    const { data: matches, error: matchesError } = await supabase
+    const { data: matches, error: matchesError } = await admin
       .from("matches")
       .select("id, round, completed, winner_id")
       .eq("tournament_id", tournamentId);
 
     if (matchesError) {
-      console.error("Error fetching matches:", matchesError);
+      console.error("[group leaderboard] Error fetching matches:", matchesError.message);
     }
 
-    // Fetch teams to build team_id → team_code map (needed for group scoring)
-    const { data: groupTeamsData } = await supabase
+    const { data: groupTeamsData, error: teamsError } = await admin
       .from("teams")
       .select("id, code")
       .eq("tournament_id", tournamentId);
+
+    if (teamsError) {
+      console.error("[group leaderboard] Error fetching teams:", teamsError.message);
+    }
 
     const groupTeamCodeMap = new Map<string, string>(
       (groupTeamsData || []).map((t: { id: string; code: string | null }) => [t.id, t.code || ""])
     );
 
-    // Fetch bracket_group_picks for all member brackets
-    const { data: memberGroupPicksData } = bracketIds.length > 0
-      ? await supabase
+    const { data: memberGroupPicksData, error: groupPicksError } = bracketIds.length > 0
+      ? await admin
           .from("bracket_group_picks")
           .select("bracket_id, group_label, team_id, position")
           .in("bracket_id", bracketIds)
-      : { data: [] as Array<{ bracket_id: string; group_label: string; team_id: string; position: number }> };
+      : { data: [] as Array<{ bracket_id: string; group_label: string; team_id: string; position: number }>, error: null };
+
+    if (groupPicksError) {
+      console.error("[group leaderboard] Error fetching bracket_group_picks:", groupPicksError.message);
+    }
 
     type ResolvedGroupPickG = { group_label: string; position: number; team_code: string };
     const memberGroupPicksByBracket = new Map<string, ResolvedGroupPickG[]>();
@@ -275,7 +294,7 @@ export async function fetchGroupLeaderboard(
     }
 
     // Get group lock time to determine eligibility status
-    const { data: groupData } = await supabase
+    const { data: groupData } = await admin
       .from("groups")
       .select("lock_at")
       .eq("id", groupId)

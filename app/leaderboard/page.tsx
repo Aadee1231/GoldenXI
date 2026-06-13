@@ -9,6 +9,7 @@ import { hasProvisionalGroups } from "@/src/data/groupStandings";
 import type { LeaderboardEntry } from "@/src/types";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export const metadata = {
   title: "Leaderboard | GoldenXI",
