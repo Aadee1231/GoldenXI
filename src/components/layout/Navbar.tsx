@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { Trophy } from "lucide-react";
 import NavbarAuth from "@/src/components/layout/NavbarAuth";
 import NavLinks from "@/src/components/layout/NavLinks";
+import MobileMenu from "@/src/components/layout/MobileMenu";
 
 function NavbarAuthFallback() {
   return (
@@ -28,9 +29,12 @@ export default function Navbar() {
           <NavLinks />
         </div>
 
-        <Suspense fallback={<NavbarAuthFallback />}>
-          <NavbarAuth />
-        </Suspense>
+        <div className="flex items-center gap-2">
+          <MobileMenu />
+          <Suspense fallback={<NavbarAuthFallback />}>
+            <NavbarAuth />
+          </Suspense>
+        </div>
       </div>
     </nav>
   );

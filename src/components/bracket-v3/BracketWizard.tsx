@@ -389,7 +389,7 @@ export default function BracketWizard() {
         </div>
       </div>
 
-      <div className="bg-gray-900 rounded-lg border border-gray-800 p-6 mb-6">
+      <div className="bg-gray-900 rounded-lg border border-gray-800 p-4 sm:p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-white">
             {STEPS.find((s) => s.id === currentStep)?.label}
@@ -398,10 +398,10 @@ export default function BracketWizard() {
             {currentStep !== "review" && (
               <button
                 onClick={handleAutoPick}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors"
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors"
               >
                 <Shuffle className="w-4 h-4" />
-                Auto-Pick
+                <span className="hidden sm:inline">Auto-Pick</span>
               </button>
             )}
             {currentStepIndex < STEPS.length - 1 && (

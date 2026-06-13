@@ -99,7 +99,7 @@ function GroupCard({ groupLabel, teams, rankedTeams, onRankChange }: GroupCardPr
               onDragOver={(e) => handleDragOver(e, index)}
               onDrop={(e) => handleDrop(e, index)}
               onDragEnd={handleDragEnd}
-              className={`flex items-center gap-3 bg-gray-900 rounded-lg p-3 border-2 transition-all cursor-move ${
+              className={`flex items-center gap-3 bg-gray-900 rounded-lg p-3 border-2 transition-all sm:cursor-move ${
                 draggedIndex === index
                   ? "opacity-50 border-yellow-400"
                   : dragOverIndex === index
@@ -107,10 +107,10 @@ function GroupCard({ groupLabel, teams, rankedTeams, onRankChange }: GroupCardPr
                   : "border-gray-700"
               }`}
             >
-              <div className="text-gray-500 cursor-grab active:cursor-grabbing">
+              <div className="hidden sm:block text-gray-500 cursor-grab active:cursor-grabbing shrink-0">
                 <GripVertical className="w-5 h-5" />
               </div>
-              <div className="flex items-center gap-2 flex-1">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
                 <div className="w-8 h-8 flex items-center justify-center bg-gray-800 rounded font-bold text-white">
                   {position}
                 </div>
@@ -121,16 +121,16 @@ function GroupCard({ groupLabel, teams, rankedTeams, onRankChange }: GroupCardPr
                   flag_code={team.flag_code}
                   size="md"
                 />
-                <div className="flex-1">
-                  <div className="font-semibold text-white">{team.name}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-white text-sm truncate">{team.name}</div>
                   <div className="text-xs text-gray-400">{team.code}</div>
                 </div>
-                <span className={`text-xs font-semibold px-2 py-1 rounded ${badgeColor} text-white`}>
+                <span className={`text-xs font-semibold px-2 py-1 rounded ${badgeColor} text-white whitespace-nowrap shrink-0`}>
                   {badge}
                 </span>
               </div>
 
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1 shrink-0">
                 <button
                   onClick={() => moveUp(index)}
                   disabled={index === 0}
@@ -374,9 +374,8 @@ export default function GroupStageStep({ rankings, onChange, onRegisterSave, onR
   return (
     <div>
       <div className="mb-6">
-        <p className="text-gray-400 mb-4">
-          Drag teams to reorder or use the arrow buttons. Top 2 teams qualify automatically, 3rd
-          place teams enter the selection pool.
+        <p className="text-gray-400 mb-4 text-sm">
+          Rank the 4 teams in each group using the arrows. Top 2 qualify automatically; 3rd place enters the selection pool.
         </p>
 
         <div className="flex items-center justify-between">
