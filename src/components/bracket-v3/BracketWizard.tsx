@@ -291,6 +291,13 @@ export default function BracketWizard() {
     setKnockoutRoundComplete(canAdvance);
   }, []);
 
+  // Scroll to top when knockout round changes (Next button or tab click)
+  useEffect(() => {
+    if (currentStep === "knockout") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [knockoutRound, currentStep]);
+
   if (isLoadingInitialStep) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-8 pt-20 sm:pt-24">
