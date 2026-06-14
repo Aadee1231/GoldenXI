@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Trophy, BarChart2, Users, Shield } from "lucide-react";
+import { Menu, X, Trophy, BarChart2, Users, Shield, Home } from "lucide-react";
 
 const navLinks = [
+  { href: "/", label: "Home", icon: Home, color: "text-yellow-400" },
   { href: "/bracket", label: "Bracket", icon: Trophy, color: "text-red-400" },
   { href: "/leaderboard", label: "Leaderboard", icon: BarChart2, color: "text-blue-400" },
   { href: "/groups", label: "Groups", icon: Users, color: "text-green-400" },

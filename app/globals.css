@@ -22,6 +22,10 @@ body {
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Prevent horizontal overflow on mobile */
+  overflow-x: hidden;
+  /* Safe area for iPhone Safari bottom toolbar */
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 @keyframes float-slow {

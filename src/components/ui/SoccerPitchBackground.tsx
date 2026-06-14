@@ -2,31 +2,31 @@
 
 export function SoccerPitchOverlay() {
   return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-[0.06]" aria-hidden="true">
-      {/* Center circle */}
-      <div className="absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white" />
+    <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-[0.06] sm:opacity-[0.06]" aria-hidden="true">
+      {/* Center circle - simplified on mobile */}
+      <div className="absolute left-1/2 top-1/2 h-48 w-48 sm:h-64 sm:w-64 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white" />
       <div className="absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white" />
       
       {/* Center line */}
       <div className="absolute left-1/2 top-0 bottom-0 w-0.5 -translate-x-1/2 bg-white" />
       
-      {/* Penalty boxes */}
-      <div className="absolute left-0 top-1/2 h-80 w-40 -translate-y-1/2 border-2 border-white border-l-0" />
-      <div className="absolute right-0 top-1/2 h-80 w-40 -translate-y-1/2 border-2 border-white border-r-0" />
+      {/* Penalty boxes - hidden on mobile for cleaner look */}
+      <div className="hidden sm:block absolute left-0 top-1/2 h-80 w-40 -translate-y-1/2 border-2 border-white border-l-0" />
+      <div className="hidden sm:block absolute right-0 top-1/2 h-80 w-40 -translate-y-1/2 border-2 border-white border-r-0" />
       
-      {/* Goal boxes */}
-      <div className="absolute left-0 top-1/2 h-48 w-16 -translate-y-1/2 border-2 border-white border-l-0" />
-      <div className="absolute right-0 top-1/2 h-48 w-16 -translate-y-1/2 border-2 border-white border-r-0" />
+      {/* Goal boxes - hidden on mobile */}
+      <div className="hidden sm:block absolute left-0 top-1/2 h-48 w-16 -translate-y-1/2 border-2 border-white border-l-0" />
+      <div className="hidden sm:block absolute right-0 top-1/2 h-48 w-16 -translate-y-1/2 border-2 border-white border-r-0" />
       
-      {/* Penalty arcs */}
-      <div className="absolute left-[140px] top-1/2 h-32 w-32 -translate-y-1/2 rounded-full border-2 border-white border-r-0" style={{ clipPath: 'polygon(0 0, 50% 0, 50% 100%, 0 100%)' }} />
-      <div className="absolute right-[140px] top-1/2 h-32 w-32 -translate-y-1/2 rounded-full border-2 border-white border-l-0" style={{ clipPath: 'polygon(50% 0, 100% 0, 100% 100%, 50% 100%)' }} />
+      {/* Penalty arcs - hidden on mobile */}
+      <div className="hidden sm:block absolute left-[140px] top-1/2 h-32 w-32 -translate-y-1/2 rounded-full border-2 border-white border-r-0" style={{ clipPath: 'polygon(0 0, 50% 0, 50% 100%, 0 100%)' }} />
+      <div className="hidden sm:block absolute right-[140px] top-1/2 h-32 w-32 -translate-y-1/2 rounded-full border-2 border-white border-l-0" style={{ clipPath: 'polygon(50% 0, 100% 0, 100% 100%, 50% 100%)' }} />
       
-      {/* Corner arcs */}
-      <div className="absolute left-0 top-0 h-20 w-20 rounded-br-full border-b-2 border-r-2 border-white" />
-      <div className="absolute right-0 top-0 h-20 w-20 rounded-bl-full border-b-2 border-l-2 border-white" />
-      <div className="absolute bottom-0 left-0 h-20 w-20 rounded-tr-full border-r-2 border-t-2 border-white" />
-      <div className="absolute bottom-0 right-0 h-20 w-20 rounded-tl-full border-l-2 border-t-2 border-white" />
+      {/* Corner arcs - hidden on mobile */}
+      <div className="hidden sm:block absolute left-0 top-0 h-20 w-20 rounded-br-full border-b-2 border-r-2 border-white" />
+      <div className="hidden sm:block absolute right-0 top-0 h-20 w-20 rounded-bl-full border-b-2 border-l-2 border-white" />
+      <div className="hidden sm:block absolute bottom-0 left-0 h-20 w-20 rounded-tr-full border-r-2 border-t-2 border-white" />
+      <div className="hidden sm:block absolute bottom-0 right-0 h-20 w-20 rounded-tl-full border-l-2 border-t-2 border-white" />
     </div>
   );
 }

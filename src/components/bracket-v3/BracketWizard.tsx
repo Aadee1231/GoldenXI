@@ -294,7 +294,7 @@ export default function BracketWizard() {
 
   if (isLoadingInitialStep) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-8 pt-24">
+      <div className="max-w-7xl mx-auto px-4 py-8 pt-20 sm:pt-24">
         <div className="text-center py-12">
           <div className="text-gray-400">Loading your bracket...</div>
         </div>
@@ -303,7 +303,7 @@ export default function BracketWizard() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 pt-24 pb-32">
+    <div className="max-w-7xl mx-auto px-4 py-8 pt-20 sm:pt-24 pb-8 sm:pb-32">
       <div className="mb-8">
         <div className="flex items-center justify-between gap-4">
           <div>
@@ -453,6 +453,7 @@ export default function BracketWizard() {
             onRegisterSave={registerSaveCallback}
             onRegisterAutoPick={registerAutoPickCallback}
             onRoundChange={handleKnockoutRoundChange}
+            initialRound={knockoutRound}
           />
         )}
         {currentStep === "review" && (

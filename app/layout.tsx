@@ -89,7 +89,7 @@ export default function RootLayout({
     >
       <body className="flex min-h-full flex-col bg-[#080808] text-white">
         <Navbar />
-        <main className="flex-1 pt-16">{children}</main>
+        <main className="flex-1 pt-14 sm:pt-16 pb-safe">{children}</main>
         <Footer />
         <Analytics />
       </body>

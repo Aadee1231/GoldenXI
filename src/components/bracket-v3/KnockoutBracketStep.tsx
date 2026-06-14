@@ -17,6 +17,7 @@ type KnockoutBracketStepProps = {
   onRegisterSave: (callback: () => Promise<void>) => void;
   onRegisterAutoPick: (callback: () => void) => void;
   onRoundChange?: (round: "r32" | "r16" | "qf" | "sf" | "final", canAdvance: boolean) => void;
+  initialRound?: "r32" | "r16" | "qf" | "sf" | "final";
 };
 
 type MatchDisplay = {
@@ -41,16 +42,22 @@ export default function KnockoutBracketStep({
   onRegisterSave,
   onRegisterAutoPick,
   onRoundChange,
+  initialRound = "r32",
 }: KnockoutBracketStepProps) {
   const [qualifiedTeams, setQualifiedTeams] = useState<QualifiedTeam[]>([]);
   const [matches, setMatches] = useState<MatchDisplay[]>([]);
   const [loading, setLoading] = useState(true);
   const [bracketId, setBracketId] = useState<string | null>(null);
-  const [currentRound, setCurrentRound] = useState<"r32" | "r16" | "qf" | "sf" | "final">("r32");
+  const [currentRound, setCurrentRound] = useState<"r32" | "r16" | "qf" | "sf" | "final">(initialRound);
 
   useEffect(() => {
     loadData();
   }, [groupRankings, thirdPlacePicks]);
+
+  // Sync currentRound with parent's initialRound prop
+  useEffect(() => {
+    setCurrentRound(initialRound);
+  }, [initialRound]);
 
   useEffect(() => {
     onRegisterSave(handleSave);
