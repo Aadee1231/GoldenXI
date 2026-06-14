@@ -20,6 +20,8 @@ type GroupCardProps = {
 function GroupCard({ groupLabel, teams, rankedTeams, onRankChange }: GroupCardProps) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [touchStartY, setTouchStartY] = useState<number | null>(null);
+  const [touchDraggingIndex, setTouchDraggingIndex] = useState<number | null>(null);
 
   const handleDragStart = (index: number) => {
     setDraggedIndex(index);
@@ -37,7 +39,7 @@ function GroupCard({ groupLabel, teams, rankedTeams, onRankChange }: GroupCardPr
     const newRanked = [...rankedTeams];
     const [draggedTeam] = newRanked.splice(draggedIndex, 1);
     newRanked.splice(dropIndex, 0, draggedTeam);
-    
+
     onRankChange(groupLabel, newRanked);
     setDraggedIndex(null);
     setDragOverIndex(null);
@@ -47,17 +49,73 @@ function GroupCard({ groupLabel, teams, rankedTeams, onRankChange }: GroupCardPr
     setDraggedIndex(null);
     setDragOverIndex(null);
   };
-  const moveUp = (index: number) => {
-    if (index === 0) return;
+
+  // Touch drag handlers for mobile
+  const handleTouchStart = (e: React.TouchEvent, index: number) => {
+    setTouchStartY(e.touches[0].clientY);
+    setTouchDraggingIndex(index);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent, index: number) => {
+    if (touchDraggingIndex === null) return;
+    e.preventDefault(); // Prevent scrolling while dragging
+
+    const touchY = e.touches[0].clientY;
+    const element = e.currentTarget;
+    const rect = element.getBoundingClientRect();
+    const elementCenter = rect.top + rect.height / 2;
+
+    // Determine which element we're over based on touch position
+    const elements = Array.from(element.parentElement?.children || []);
+    const overIndex = elements.findIndex((el) => {
+      const elRect = el.getBoundingClientRect();
+      return touchY >= elRect.top && touchY <= elRect.bottom;
+    });
+
+    if (overIndex !== -1 && overIndex !== touchDraggingIndex) {
+      setDragOverIndex(overIndex);
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchDraggingIndex === null || dragOverIndex === null) {
+      setTouchDraggingIndex(null);
+      setTouchStartY(null);
+      setDragOverIndex(null);
+      return;
+    }
+
     const newRanked = [...rankedTeams];
-    [newRanked[index - 1], newRanked[index]] = [newRanked[index], newRanked[index - 1]];
+    const [draggedTeam] = newRanked.splice(touchDraggingIndex, 1);
+    newRanked.splice(dragOverIndex, 0, draggedTeam);
+
+    onRankChange(groupLabel, newRanked);
+    setTouchDraggingIndex(null);
+    setTouchStartY(null);
+    setDragOverIndex(null);
+  };
+
+  const moveUp = (index: number) => {
+    const newRanked = [...rankedTeams];
+    // Wrap around: if at index 0, move to last position
+    if (index === 0) {
+      const [team] = newRanked.splice(0, 1);
+      newRanked.push(team);
+    } else {
+      [newRanked[index - 1], newRanked[index]] = [newRanked[index], newRanked[index - 1]];
+    }
     onRankChange(groupLabel, newRanked);
   };
 
   const moveDown = (index: number) => {
-    if (index === rankedTeams.length - 1) return;
     const newRanked = [...rankedTeams];
-    [newRanked[index], newRanked[index + 1]] = [newRanked[index + 1], newRanked[index]];
+    // Wrap around: if at last position, move to index 0
+    if (index === rankedTeams.length - 1) {
+      const team = newRanked.pop();
+      if (team) newRanked.unshift(team);
+    } else {
+      [newRanked[index], newRanked[index + 1]] = [newRanked[index + 1], newRanked[index]];
+    }
     onRankChange(groupLabel, newRanked);
   };
 
@@ -99,15 +157,18 @@ function GroupCard({ groupLabel, teams, rankedTeams, onRankChange }: GroupCardPr
               onDragOver={(e) => handleDragOver(e, index)}
               onDrop={(e) => handleDrop(e, index)}
               onDragEnd={handleDragEnd}
-              className={`flex items-center gap-2 sm:gap-3 bg-gray-900 rounded-lg p-2.5 sm:p-3 border-2 transition-all sm:cursor-move ${
-                draggedIndex === index
-                  ? "opacity-50 border-yellow-400"
+              onTouchStart={(e) => handleTouchStart(e, index)}
+              onTouchMove={(e) => handleTouchMove(e, index)}
+              onTouchEnd={handleTouchEnd}
+              className={`flex items-center gap-2 sm:gap-3 bg-gray-900 rounded-lg p-2.5 sm:p-3 border-2 transition-all cursor-move select-none ${
+                draggedIndex === index || touchDraggingIndex === index
+                  ? "opacity-50 border-yellow-400 scale-105"
                   : dragOverIndex === index
                   ? "border-yellow-400"
                   : "border-gray-700"
               }`}
             >
-              <div className="hidden sm:block text-gray-500 cursor-grab active:cursor-grabbing shrink-0">
+              <div className="text-gray-500 cursor-grab active:cursor-grabbing shrink-0">
                 <GripVertical className="w-5 h-5" />
               </div>
               <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -132,25 +193,15 @@ function GroupCard({ groupLabel, teams, rankedTeams, onRankChange }: GroupCardPr
 
               <div className="flex flex-col gap-0.5 sm:gap-1 shrink-0">
                 <button
-                  onClick={() => moveUp(index)}
-                  disabled={index === 0}
-                  className={`p-1.5 sm:p-1 rounded transition-colors ${
-                    index === 0
-                      ? "text-gray-600 cursor-not-allowed"
-                      : "text-gray-400 hover:text-white hover:bg-gray-700 active:bg-gray-600"
-                  }`}
+                  onClick={(e) => { e.stopPropagation(); moveUp(index); }}
+                  className={`p-1.5 sm:p-1 rounded transition-colors text-gray-400 hover:text-white hover:bg-gray-700 active:bg-gray-600`}
                   aria-label="Move up"
                 >
                   <ChevronUp className="w-5 h-5 sm:w-4 sm:h-4" />
                 </button>
                 <button
-                  onClick={() => moveDown(index)}
-                  disabled={index === rankedTeams.length - 1}
-                  className={`p-1.5 sm:p-1 rounded transition-colors ${
-                    index === rankedTeams.length - 1
-                      ? "text-gray-600 cursor-not-allowed"
-                      : "text-gray-400 hover:text-white hover:bg-gray-700 active:bg-gray-600"
-                  }`}
+                  onClick={(e) => { e.stopPropagation(); moveDown(index); }}
+                  className={`p-1.5 sm:p-1 rounded transition-colors text-gray-400 hover:text-white hover:bg-gray-700 active:bg-gray-600`}
                   aria-label="Move down"
                 >
                   <ChevronDown className="w-5 h-5 sm:w-4 sm:h-4" />
