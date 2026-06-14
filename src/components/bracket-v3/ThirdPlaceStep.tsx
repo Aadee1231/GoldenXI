@@ -146,14 +146,14 @@ export default function ThirdPlaceStep({
 
   return (
     <div>
-      <div className="mb-6">
-        <p className="text-gray-400 mb-4">
+      <div className="mb-4 sm:mb-6">
+        <p className="text-gray-400 mb-3 sm:mb-4 text-xs sm:text-sm">
           In the real World Cup 2026 format, the best eight third-place teams advance to the Round
           of 32. For GoldenXI, pick the eight you think will move on.
         </p>
 
         <div className="flex items-center justify-between">
-          <div className="text-sm">
+          <div className="text-xs sm:text-sm">
             <span className="text-gray-400">Selected: </span>
             <span
               className={`font-semibold ${
@@ -166,23 +166,23 @@ export default function ThirdPlaceStep({
         </div>
 
         {!canContinue && selectedTeamIds.length > 0 && (
-          <div className="mt-4 p-3 bg-yellow-900/20 border border-yellow-600/30 rounded-lg">
-            <p className="text-sm text-yellow-400">
+          <div className="mt-3 sm:mt-4 p-2.5 sm:p-3 bg-yellow-900/20 border border-yellow-600/30 rounded-lg">
+            <p className="text-xs sm:text-sm text-yellow-400">
               Select {8 - selectedTeamIds.length} more team{8 - selectedTeamIds.length !== 1 ? "s" : ""} to continue
             </p>
           </div>
         )}
 
         {canContinue && (
-          <div className="mt-4 p-3 bg-green-900/20 border border-green-600/30 rounded-lg">
-            <p className="text-sm text-green-400">
+          <div className="mt-3 sm:mt-4 p-2.5 sm:p-3 bg-green-900/20 border border-green-600/30 rounded-lg">
+            <p className="text-xs sm:text-sm text-green-400">
               ✓ All 8 teams selected! You can proceed to the knockout bracket.
             </p>
           </div>
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
         {thirdPlaceTeams.map((team) => {
           const isSelected = selectedTeamIds.includes(team.id);
           const canSelect = isSelected || selectedTeamIds.length < 8;
@@ -192,7 +192,7 @@ export default function ThirdPlaceStep({
               key={team.id}
               onClick={() => toggleTeam(team.id)}
               disabled={!canSelect}
-              className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-all ${
+              className={`flex items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-lg border-2 transition-all ${
                 isSelected
                   ? "bg-green-900/30 border-green-600 shadow-lg shadow-green-900/20"
                   : canSelect
@@ -202,9 +202,9 @@ export default function ThirdPlaceStep({
             >
               <div className="flex-shrink-0">
                 {isSelected ? (
-                  <CheckCircle2 className="w-6 h-6 text-green-400" />
+                  <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-green-400" />
                 ) : (
-                  <Circle className="w-6 h-6 text-gray-600" />
+                  <Circle className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
                 )}
               </div>
 
@@ -213,13 +213,13 @@ export default function ThirdPlaceStep({
                 code={team.code}
                 flag_emoji={team.flag_emoji}
                 flag_code={team.flag_code}
-                size="lg"
+                size="sm"
               />
 
-              <div className="flex-1 text-left">
-                <div className="font-semibold text-white">{team.name}</div>
-                <div className="text-xs text-gray-400">
-                  Group {team.group_label} • {team.code}
+              <div className="flex-1 text-left min-w-0">
+                <div className="font-semibold text-white text-xs sm:text-sm truncate">{team.name}</div>
+                <div className="text-[10px] sm:text-xs text-gray-400">
+                  G{team.group_label} • {team.code}
                 </div>
               </div>
             </button>

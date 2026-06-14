@@ -321,16 +321,16 @@ export default function BracketWizard() {
         </div>
       </div>
 
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
+      <div className="mb-6 sm:mb-8">
+        <div className="flex items-center justify-between mb-3 sm:mb-4 overflow-x-auto pb-2 sm:pb-0">
           {STEPS.map((step, index) => {
             const isActive = step.id === currentStep;
             const isCompleted = index < currentStepIndex;
-            
+
             // TASK 3: Determine if step is clickable
             let isClickable = false;
             let disabledMessage = "";
-            
+
             if (step.id === "groups") {
               isClickable = true;
             } else if (step.id === "third-place") {
@@ -338,12 +338,12 @@ export default function BracketWizard() {
               disabledMessage = "Complete group rankings first";
             } else if (step.id === "knockout") {
               isClickable = wizardState.groupRankings.length >= 48 && wizardState.thirdPlacePicks.length >= 8;
-              disabledMessage = wizardState.groupRankings.length < 48 
-                ? "Complete group rankings first" 
+              disabledMessage = wizardState.groupRankings.length < 48
+                ? "Complete group rankings first"
                 : "Complete third-place picks first";
             } else if (step.id === "review") {
-              isClickable = wizardState.groupRankings.length >= 48 && 
-                           wizardState.thirdPlacePicks.length >= 8 && 
+              isClickable = wizardState.groupRankings.length >= 48 &&
+                           wizardState.thirdPlacePicks.length >= 8 &&
                            Object.keys(wizardState.knockoutPicks).length >= 31;
               disabledMessage = "Complete all bracket picks first";
             }
@@ -361,12 +361,12 @@ export default function BracketWizard() {
             };
 
             return (
-              <div key={step.id} className="flex items-center flex-1">
-                <div className="flex flex-col items-center flex-1">
+              <div key={step.id} className="flex items-center flex-shrink-0">
+                <div className="flex flex-col items-center">
                   <button
                     onClick={handleStepClick}
                     disabled={!isClickable && !isActive}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all ${
+                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold transition-all ${
                       isActive
                         ? "bg-yellow-400 text-black"
                         : isCompleted
@@ -379,17 +379,16 @@ export default function BracketWizard() {
                     {isCompleted ? "✓" : index + 1}
                   </button>
                   <div
-                    className={`mt-2 text-xs md:text-sm font-medium transition-colors ${
+                    className={`mt-1 sm:mt-2 text-[10px] sm:text-xs md:text-sm font-medium transition-colors ${
                       isActive ? "text-yellow-400" : isCompleted ? "text-green-400" : "text-gray-500"
                     }`}
                   >
-                    <span className="hidden md:inline">{step.label}</span>
-                    <span className="md:hidden">{step.shortLabel}</span>
+                    {step.shortLabel}
                   </div>
                 </div>
                 {index < STEPS.length - 1 && (
                   <div
-                    className={`h-0.5 flex-1 mx-2 transition-colors ${
+                    className={`h-0.5 w-4 sm:w-8 md:flex-1 mx-1 sm:mx-2 transition-colors ${
                       isCompleted ? "bg-green-600" : "bg-gray-700"
                     }`}
                   />

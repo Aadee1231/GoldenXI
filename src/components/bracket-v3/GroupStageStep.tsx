@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ChevronUp, ChevronDown, GripVertical } from "lucide-react";
 import { getTeamsByGroup } from "@/src/lib/supabase/queries/group-picks-client";
 import { saveGroupRankings, getGroupRankings } from "@/src/lib/supabase/queries/group-picks-client";
@@ -64,9 +64,9 @@ function GroupCard({ groupLabel, teams, rankedTeams, onRankChange }: GroupCardPr
   const isComplete = rankedTeams.length === 4;
 
   return (
-    <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xl font-bold text-white">Group {groupLabel}</h3>
+    <div className="bg-gray-800 rounded-lg border border-gray-700 p-3 sm:p-4">
+      <div className="flex items-center justify-between mb-3 sm:mb-4">
+        <h3 className="text-lg sm:text-xl font-bold text-white">Group {groupLabel}</h3>
         {isComplete && (
           <span className="text-xs font-semibold px-2 py-1 rounded bg-green-600 text-white">
             Complete
@@ -84,10 +84,10 @@ function GroupCard({ groupLabel, teams, rankedTeams, onRankChange }: GroupCardPr
             badge = "Qualified";
             badgeColor = "bg-green-600";
           } else if (position === 3) {
-            badge = "3rd Place Pool";
+            badge = "3rd Pool";
             badgeColor = "bg-blue-600";
           } else {
-            badge = "Eliminated";
+            badge = "Out";
             badgeColor = "bg-red-600";
           }
 
@@ -99,7 +99,7 @@ function GroupCard({ groupLabel, teams, rankedTeams, onRankChange }: GroupCardPr
               onDragOver={(e) => handleDragOver(e, index)}
               onDrop={(e) => handleDrop(e, index)}
               onDragEnd={handleDragEnd}
-              className={`flex items-center gap-3 bg-gray-900 rounded-lg p-3 border-2 transition-all sm:cursor-move ${
+              className={`flex items-center gap-2 sm:gap-3 bg-gray-900 rounded-lg p-2.5 sm:p-3 border-2 transition-all sm:cursor-move ${
                 draggedIndex === index
                   ? "opacity-50 border-yellow-400"
                   : dragOverIndex === index
@@ -111,7 +111,7 @@ function GroupCard({ groupLabel, teams, rankedTeams, onRankChange }: GroupCardPr
                 <GripVertical className="w-5 h-5" />
               </div>
               <div className="flex items-center gap-2 flex-1 min-w-0">
-                <div className="w-8 h-8 flex items-center justify-center bg-gray-800 rounded font-bold text-white">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-gray-800 rounded font-bold text-white text-sm">
                   {position}
                 </div>
                 <TeamFlag
@@ -119,41 +119,41 @@ function GroupCard({ groupLabel, teams, rankedTeams, onRankChange }: GroupCardPr
                   code={team.code}
                   flag_emoji={team.flag_emoji}
                   flag_code={team.flag_code}
-                  size="md"
+                  size="sm"
                 />
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-white text-sm truncate">{team.name}</div>
-                  <div className="text-xs text-gray-400">{team.code}</div>
+                  <div className="font-semibold text-white text-xs sm:text-sm truncate">{team.name}</div>
+                  <div className="text-xs text-gray-400 hidden sm:block">{team.code}</div>
                 </div>
-                <span className={`text-xs font-semibold px-2 py-1 rounded ${badgeColor} text-white whitespace-nowrap shrink-0`}>
+                <span className={`text-[10px] sm:text-xs font-semibold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded ${badgeColor} text-white whitespace-nowrap shrink-0`}>
                   {badge}
                 </span>
               </div>
 
-              <div className="flex flex-col gap-1 shrink-0">
+              <div className="flex flex-col gap-0.5 sm:gap-1 shrink-0">
                 <button
                   onClick={() => moveUp(index)}
                   disabled={index === 0}
-                  className={`p-1 rounded transition-colors ${
+                  className={`p-1.5 sm:p-1 rounded transition-colors ${
                     index === 0
                       ? "text-gray-600 cursor-not-allowed"
-                      : "text-gray-400 hover:text-white hover:bg-gray-700"
+                      : "text-gray-400 hover:text-white hover:bg-gray-700 active:bg-gray-600"
                   }`}
                   aria-label="Move up"
                 >
-                  <ChevronUp className="w-4 h-4" />
+                  <ChevronUp className="w-5 h-5 sm:w-4 sm:h-4" />
                 </button>
                 <button
                   onClick={() => moveDown(index)}
                   disabled={index === rankedTeams.length - 1}
-                  className={`p-1 rounded transition-colors ${
+                  className={`p-1.5 sm:p-1 rounded transition-colors ${
                     index === rankedTeams.length - 1
                       ? "text-gray-600 cursor-not-allowed"
-                      : "text-gray-400 hover:text-white hover:bg-gray-700"
+                      : "text-gray-400 hover:text-white hover:bg-gray-700 active:bg-gray-600"
                   }`}
                   aria-label="Move down"
                 >
-                  <ChevronDown className="w-4 h-4" />
+                  <ChevronDown className="w-5 h-5 sm:w-4 sm:h-4" />
                 </button>
               </div>
             </div>
@@ -176,6 +176,8 @@ export default function GroupStageStep({ rankings, onChange, onRegisterSave, onR
   const [rankedTeamsByGroup, setRankedTeamsByGroup] = useState<Record<string, Team[]>>({});
   const [loading, setLoading] = useState(true);
   const [bracketId, setBracketId] = useState<string | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  const groupRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
     loadData();
@@ -363,6 +365,14 @@ export default function GroupStageStep({ rankings, onChange, onRegisterSave, onR
     (label) => rankedTeamsByGroup[label]?.length === 4
   ).length;
 
+  const scrollToGroup = (groupLabel: string) => {
+    setSelectedGroup(groupLabel);
+    const ref = groupRefs.current[groupLabel];
+    if (ref) {
+      ref.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   if (loading) {
     return (
       <div className="text-center py-12">
@@ -373,13 +383,13 @@ export default function GroupStageStep({ rankings, onChange, onRegisterSave, onR
 
   return (
     <div>
-      <div className="mb-6">
-        <p className="text-gray-400 mb-4 text-sm">
+      <div className="mb-4 sm:mb-6">
+        <p className="text-gray-400 mb-3 sm:mb-4 text-xs sm:text-sm">
           Rank the 4 teams in each group using the arrows. Top 2 qualify automatically; 3rd place enters the selection pool.
         </p>
 
         <div className="flex items-center justify-between">
-          <div className="text-sm">
+          <div className="text-xs sm:text-sm">
             <span className="text-gray-400">Progress: </span>
             <span className="font-semibold text-white">
               {completedGroups} / 12 groups completed
@@ -388,15 +398,44 @@ export default function GroupStageStep({ rankings, onChange, onRegisterSave, onR
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Mobile group navigation */}
+      <div className="mb-4 sm:hidden overflow-x-auto pb-2">
+        <div className="flex gap-2">
+          {GROUP_LABELS.map((label) => {
+            const isComplete = rankedTeamsByGroup[label]?.length === 4;
+            return (
+              <button
+                key={label}
+                onClick={() => scrollToGroup(label)}
+                className={`px-3 py-2 rounded-lg font-semibold text-sm whitespace-nowrap transition-colors ${
+                  selectedGroup === label
+                    ? "bg-yellow-400 text-black"
+                    : isComplete
+                    ? "bg-green-900/30 text-green-400 border border-green-600"
+                    : "bg-gray-800 text-gray-400 border border-gray-700"
+                }`}
+              >
+                Group {label}
+                {isComplete && " ✓"}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {GROUP_LABELS.map((label) => (
-          <GroupCard
+          <div
             key={label}
-            groupLabel={label}
-            teams={teamsByGroup[label] || []}
-            rankedTeams={rankedTeamsByGroup[label] || []}
-            onRankChange={handleRankChange}
-          />
+            ref={(el) => { groupRefs.current[label] = el; }}
+          >
+            <GroupCard
+              groupLabel={label}
+              teams={teamsByGroup[label] || []}
+              rankedTeams={rankedTeamsByGroup[label] || []}
+              onRankChange={handleRankChange}
+            />
+          </div>
         ))}
       </div>
     </div>

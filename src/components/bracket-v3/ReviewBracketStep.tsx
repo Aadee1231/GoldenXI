@@ -225,17 +225,17 @@ export default function ReviewBracketStep({ wizardState, onRegisterSave, onNavig
   const knockoutComplete = validation?.counts.knockoutPicks === 31;
 
   return (
-    <div>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-white mb-2">Review Your Bracket</h2>
-        <p className="text-gray-400 mb-4">
+    <div className="pb-safe">
+      <div className="mb-4 sm:mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Review Your Bracket</h2>
+        <p className="text-gray-400 mb-3 sm:mb-4 text-sm sm:text-base">
           Review your selections and lock your bracket when ready.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
         <div
-          className={`p-4 rounded-lg border-2 ${
+          className={`p-3 sm:p-4 rounded-lg border-2 ${
             groupsComplete
               ? "bg-green-900/20 border-green-600"
               : "bg-gray-800 border-gray-700"
@@ -243,20 +243,20 @@ export default function ReviewBracketStep({ wizardState, onRegisterSave, onNavig
         >
           <div className="flex items-center gap-2 mb-2">
             {groupsComplete ? (
-              <CheckCircle2 className="w-5 h-5 text-green-400" />
+              <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
             ) : (
-              <AlertCircle className="w-5 h-5 text-yellow-400" />
+              <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
             )}
-            <h3 className="font-semibold text-white">Group Rankings</h3>
+            <h3 className="font-semibold text-white text-sm sm:text-base">Group Rankings</h3>
           </div>
-          <div className="text-2xl font-bold text-white">
+          <div className="text-xl sm:text-2xl font-bold text-white">
             {validation?.counts.groupPicks || 0} / 48
           </div>
-          <div className="text-xs text-gray-400">12 groups × 4 positions</div>
+          <div className="text-[10px] sm:text-xs text-gray-400">12 groups × 4 positions</div>
         </div>
 
         <div
-          className={`p-4 rounded-lg border-2 ${
+          className={`p-3 sm:p-4 rounded-lg border-2 ${
             thirdPlaceComplete
               ? "bg-green-900/20 border-green-600"
               : "bg-gray-800 border-gray-700"
@@ -264,20 +264,20 @@ export default function ReviewBracketStep({ wizardState, onRegisterSave, onNavig
         >
           <div className="flex items-center gap-2 mb-2">
             {thirdPlaceComplete ? (
-              <CheckCircle2 className="w-5 h-5 text-green-400" />
+              <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
             ) : (
-              <AlertCircle className="w-5 h-5 text-yellow-400" />
+              <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
             )}
-            <h3 className="font-semibold text-white">Third-Place Picks</h3>
+            <h3 className="font-semibold text-white text-sm sm:text-base">Third-Place Picks</h3>
           </div>
-          <div className="text-2xl font-bold text-white">
+          <div className="text-xl sm:text-2xl font-bold text-white">
             {validation?.counts.thirdPlacePicks || 0} / 8
           </div>
-          <div className="text-xs text-gray-400">Advancing teams</div>
+          <div className="text-[10px] sm:text-xs text-gray-400">Advancing teams</div>
         </div>
 
         <div
-          className={`p-4 rounded-lg border-2 ${
+          className={`p-3 sm:p-4 rounded-lg border-2 ${
             knockoutComplete
               ? "bg-green-900/20 border-green-600"
               : "bg-gray-800 border-gray-700"
@@ -285,31 +285,31 @@ export default function ReviewBracketStep({ wizardState, onRegisterSave, onNavig
         >
           <div className="flex items-center gap-2 mb-2">
             {knockoutComplete ? (
-              <CheckCircle2 className="w-5 h-5 text-green-400" />
+              <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
             ) : (
-              <AlertCircle className="w-5 h-5 text-yellow-400" />
+              <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
             )}
-            <h3 className="font-semibold text-white">Knockout Picks</h3>
+            <h3 className="font-semibold text-white text-sm sm:text-base">Knockout Picks</h3>
           </div>
-          <div className="text-2xl font-bold text-white">
+          <div className="text-xl sm:text-2xl font-bold text-white">
             {validation?.counts.knockoutPicks || 0} / 31
           </div>
-          <div className="text-xs text-gray-400">R32 through Final</div>
+          <div className="text-[10px] sm:text-xs text-gray-400">R32 through Final</div>
         </div>
       </div>
 
       {!isLocked && (
-        <div className="mb-6 flex flex-wrap gap-3">
+        <div className="mb-4 sm:mb-6 flex flex-wrap gap-2 sm:gap-3">
           <button
             onClick={() => onNavigate?.("groups")}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg font-medium hover:bg-gray-700 transition-colors"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-gray-800 text-white rounded-lg font-medium hover:bg-gray-700 transition-colors text-sm"
           >
             <Edit className="w-4 h-4" />
             Edit Bracket
           </button>
           <button
             onClick={() => setShowResetConfirm(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-red-900/30 text-red-400 rounded-lg font-medium hover:bg-red-900/50 transition-colors border border-red-600/30"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-red-900/30 text-red-400 rounded-lg font-medium hover:bg-red-900/50 transition-colors border border-red-600/30 text-sm"
           >
             <RotateCcw className="w-4 h-4" />
             Reset Bracket
@@ -318,33 +318,33 @@ export default function ReviewBracketStep({ wizardState, onRegisterSave, onNavig
       )}
 
       {champion && (
-        <div className="bg-gradient-to-br from-yellow-900/30 to-yellow-800/20 border-2 border-yellow-600 rounded-lg p-6 mb-6">
-          <h3 className="text-lg font-semibold text-yellow-400 mb-4">🏆 Your Champion</h3>
-          <div className="flex items-center gap-4">
+        <div className="bg-gradient-to-br from-yellow-900/30 to-yellow-800/20 border-2 border-yellow-600 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
+          <h3 className="text-base sm:text-lg font-semibold text-yellow-400 mb-3 sm:mb-4">🏆 Your Champion</h3>
+          <div className="flex items-center gap-3 sm:gap-4">
             <TeamFlag
               name={champion.name}
               code={champion.code}
               flag_emoji={champion.flag_emoji}
               flag_code={champion.flag_code}
-              size="xl"
+              size="lg"
             />
             <div>
-              <div className="text-3xl font-bold text-white">{champion.name}</div>
-              <div className="text-gray-400">{champion.code}</div>
+              <div className="text-xl sm:text-3xl font-bold text-white">{champion.name}</div>
+              <div className="text-gray-400 text-sm">{champion.code}</div>
             </div>
           </div>
           {finalist && (
-            <div className="mt-4 pt-4 border-t border-yellow-600/30">
-              <div className="text-sm text-gray-400 mb-2">Runner-up:</div>
-              <div className="flex items-center gap-3">
+            <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-yellow-600/30">
+              <div className="text-xs sm:text-sm text-gray-400 mb-2">Runner-up:</div>
+              <div className="flex items-center gap-2 sm:gap-3">
                 <TeamFlag
                   name={finalist.name}
                   code={finalist.code}
                   flag_emoji={finalist.flag_emoji}
                   flag_code={finalist.flag_code}
-                  size="lg"
+                  size="md"
                 />
-                <div className="text-xl font-semibold text-white">{finalist.name}</div>
+                <div className="text-base sm:text-xl font-semibold text-white">{finalist.name}</div>
               </div>
             </div>
           )}
@@ -352,9 +352,9 @@ export default function ReviewBracketStep({ wizardState, onRegisterSave, onNavig
       )}
 
       {!isComplete && validation && validation.errors.length > 0 && (
-        <div className="bg-red-900/20 border border-red-600/30 rounded-lg p-4 mb-6">
-          <h3 className="font-semibold text-red-400 mb-2">Incomplete Bracket</h3>
-          <ul className="text-sm text-gray-300 space-y-1">
+        <div className="bg-red-900/20 border border-red-600/30 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+          <h3 className="font-semibold text-red-400 mb-2 text-sm sm:text-base">Incomplete Bracket</h3>
+          <ul className="text-xs sm:text-sm text-gray-300 space-y-1">
             {validation.errors.map((error, index) => (
               <li key={index}>• {error}</li>
             ))}
@@ -363,16 +363,16 @@ export default function ReviewBracketStep({ wizardState, onRegisterSave, onNavig
       )}
 
       {isComplete && !isLocked && (
-        <div className="bg-green-900/20 border border-green-600/30 rounded-lg p-4 mb-6">
-          <p className="text-green-400">
+        <div className="bg-green-900/20 border border-green-600/30 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+          <p className="text-green-400 text-xs sm:text-sm">
             ✓ Your bracket is complete! You can lock it now to finalize your picks.
           </p>
         </div>
       )}
 
       {isLocked && (
-        <div className="bg-blue-900/20 border border-blue-600/30 rounded-lg p-4 mb-6">
-          <p className="text-blue-400">
+        <div className="bg-blue-900/20 border border-blue-600/30 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+          <p className="text-blue-400 text-xs sm:text-sm">
             🔒 Your bracket is locked. No further changes can be made until you unlock it.
           </p>
         </div>
@@ -380,7 +380,7 @@ export default function ReviewBracketStep({ wizardState, onRegisterSave, onNavig
 
       {message && (
         <div
-          className={`mb-6 p-3 rounded-lg ${
+          className={`mb-4 sm:mb-6 p-2.5 sm:p-3 rounded-lg ${
             message.startsWith("✓")
               ? "bg-green-900/20 border border-green-600/30 text-green-400"
               : "bg-red-900/20 border border-red-600/30 text-red-400"
@@ -390,51 +390,51 @@ export default function ReviewBracketStep({ wizardState, onRegisterSave, onNavig
         </div>
       )}
 
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-2 sm:gap-3 pb-safe">
         {!isLocked ? (
           <button
             onClick={handleLock}
             disabled={!isComplete || actionLoading}
-            className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-4 sm:px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base min-h-[48px]"
           >
-            <Lock className="w-5 h-5" />
+            <Lock className="w-4 h-4 sm:w-5 sm:h-5" />
             {actionLoading ? "Locking..." : "Lock Bracket"}
           </button>
         ) : (
           <button
             onClick={handleUnlock}
             disabled={actionLoading}
-            className="flex items-center gap-2 px-6 py-3 bg-yellow-600 text-white rounded-lg font-semibold hover:bg-yellow-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-4 sm:px-6 py-3 bg-yellow-600 text-white rounded-lg font-semibold hover:bg-yellow-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base min-h-[48px]"
           >
-            <Unlock className="w-5 h-5" />
+            <Unlock className="w-4 h-4 sm:w-5 sm:h-5" />
             {actionLoading ? "Unlocking..." : "Unlock Bracket"}
           </button>
         )}
       </div>
 
-      <p className="mt-4 text-xs text-gray-500">
+      <p className="mt-3 sm:mt-4 text-[10px] sm:text-xs text-gray-500">
         By submitting a bracket, your display name and picks may appear publicly on the leaderboard.
       </p>
 
       {showResetConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-          <div className="bg-gray-900 rounded-lg border border-red-600/30 p-6 max-w-md w-full">
-            <h3 className="text-xl font-bold text-white mb-2">Reset Bracket?</h3>
-            <p className="text-gray-400 mb-6">
+          <div className="bg-gray-900 rounded-lg border border-red-600/30 p-4 sm:p-6 max-w-md w-full">
+            <h3 className="text-lg sm:text-xl font-bold text-white mb-2">Reset Bracket?</h3>
+            <p className="text-gray-400 mb-4 sm:mb-6 text-sm sm:text-base">
               This will delete all your picks (group rankings, third-place selections, and knockout picks). This action cannot be undone.
             </p>
-            <div className="flex gap-3">
+            <div className="flex gap-2 sm:gap-3">
               <button
                 onClick={() => setShowResetConfirm(false)}
                 disabled={actionLoading}
-                className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-700 transition-colors disabled:opacity-50"
+                className="flex-1 px-3 sm:px-4 py-2 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-700 transition-colors disabled:opacity-50 text-sm"
               >
                 Cancel
               </button>
               <button
                 onClick={handleReset}
                 disabled={actionLoading}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
+                className="flex-1 px-3 sm:px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 text-sm"
               >
                 {actionLoading ? "Resetting..." : "Reset Bracket"}
               </button>

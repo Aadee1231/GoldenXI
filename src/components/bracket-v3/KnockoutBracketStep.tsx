@@ -346,13 +346,13 @@ export default function KnockoutBracketStep({
 
   return (
     <div>
-      <div className="mb-6">
-        <p className="text-gray-400 mb-4">
+      <div className="mb-4 sm:mb-6">
+        <p className="text-gray-400 mb-3 sm:mb-4 text-xs sm:text-sm">
           Pick the winner of each match from Round of 32 through to the Final.
         </p>
 
-        <div className="flex items-center justify-between mb-4">
-          <div className="text-sm">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <div className="text-xs sm:text-sm">
             <span className="text-gray-400">Total picks: </span>
             <span className="font-semibold text-white">{totalPicks} / 31</span>
           </div>
@@ -363,7 +363,7 @@ export default function KnockoutBracketStep({
             <button
               key={round.id}
               onClick={() => setCurrentRound(round.id as typeof currentRound)}
-              className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-colors ${
+              className={`px-3 py-2 sm:px-4 sm:py-2 rounded-lg font-semibold text-xs sm:text-sm whitespace-nowrap transition-colors ${
                 currentRound === round.id
                   ? "bg-yellow-400 text-black"
                   : round.complete
@@ -378,25 +378,25 @@ export default function KnockoutBracketStep({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
         {currentRoundData?.matches.map((match, index) => (
           <div
             key={match.id}
-            className="bg-gray-800 rounded-lg border border-gray-700 p-4 relative"
+            className="bg-gray-800 rounded-lg border border-gray-700 p-3 sm:p-4 relative"
           >
-            <div className="flex items-center justify-between mb-3">
-              <div className="text-xs text-gray-400">
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <div className="text-[10px] sm:text-xs text-gray-400">
                 {match.matchNumber ? `Match ${match.matchNumber}` : `Match ${index + 1}`}
               </div>
               {match.stadium && match.city && (
-                <div className="text-xs text-gray-500">
+                <div className="text-[10px] sm:text-xs text-gray-500 hidden sm:block">
                   {match.stadium} · {match.city}
                 </div>
               )}
             </div>
 
             {match.displayDate && (
-              <div className="text-xs text-gray-400 mb-2">
+              <div className="text-[10px] sm:text-xs text-gray-400 mb-2">
                 {match.displayDate}
               </div>
             )}
@@ -407,10 +407,10 @@ export default function KnockoutBracketStep({
                   return (
                     <div
                       key={`tbd-${Math.random()}`}
-                      className="flex items-center gap-3 p-3 bg-gray-900 rounded border border-gray-700 opacity-50"
+                      className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 bg-gray-900 rounded border border-gray-700 opacity-50"
                     >
-                      <div className="text-xl">❓</div>
-                      <div className="flex-1 text-sm text-gray-500">TBD</div>
+                      <div className="text-lg sm:text-xl">❓</div>
+                      <div className="flex-1 text-xs sm:text-sm text-gray-500">TBD</div>
                     </div>
                   );
                 }
@@ -421,7 +421,7 @@ export default function KnockoutBracketStep({
                   <button
                     key={team.id}
                     onClick={() => handlePickWinner(match.id, team.id)}
-                    className={`w-full flex items-center gap-3 p-3 rounded border-2 transition-all ${
+                    className={`w-full flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 rounded border-2 transition-all min-h-[48px] ${
                       isWinner
                         ? "bg-green-900/30 border-green-600 shadow-lg"
                         : "bg-gray-900 border-gray-700 hover:border-yellow-400/50"
@@ -432,20 +432,20 @@ export default function KnockoutBracketStep({
                       code={team.code}
                       flag_emoji={team.flag_emoji}
                       flag_code={team.flag_code}
-                      size="md"
+                      size="sm"
                     />
-                    <div className="flex-1 text-left">
-                      <div className="font-semibold text-white text-sm">{team.name}</div>
-                      <div className="text-xs text-gray-400">{team.slotLabel}</div>
+                    <div className="flex-1 text-left min-w-0">
+                      <div className="font-semibold text-white text-xs sm:text-sm truncate">{team.name}</div>
+                      <div className="text-[10px] sm:text-xs text-gray-400 hidden sm:block">{team.slotLabel}</div>
                     </div>
                     {isWinner && (
-                      <div className="text-green-400 font-bold text-sm">✓</div>
+                      <div className="text-green-400 font-bold text-xs sm:text-sm">✓</div>
                     )}
                   </button>
                 );
               })}
             </div>
-            
+
             {process.env.NODE_ENV === "development" && match.templateDebug && (
               <div className="mt-2 pt-2 border-t border-gray-700">
                 <div className="text-xs text-gray-500">
@@ -453,10 +453,10 @@ export default function KnockoutBracketStep({
                 </div>
               </div>
             )}
-            
+
             {match.winnerId && (
               <div className="mt-2 pt-2 border-t border-gray-700">
-                <div className="text-xs text-green-400 text-center">
+                <div className="text-[10px] sm:text-xs text-green-400 text-center">
                   Advances to next round
                 </div>
               </div>
