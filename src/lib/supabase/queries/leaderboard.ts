@@ -199,6 +199,124 @@ export async function fetchLeaderboard(
 }
 
 /**
+ * Fetch bracket data for score details page
+ */
+export async function fetchBracketForScoreDetails(
+  bracketId: string
+): Promise<{ data: { bracket: any; groupPicks: any[]; champion: any } | null; error: string | null }> {
+  try {
+    const admin = createAdminClient();
+
+    // Get active tournament
+    const { id: tournamentId, error: tournamentError } = await getActiveTournamentId();
+    if (tournamentError || !tournamentId) {
+      return { data: null, error: tournamentError || "No active tournament found" };
+    }
+
+    // Get bracket basic info
+    const { data: bracket, error: bracketError } = await admin
+      .from("brackets")
+      .select(`
+        id,
+        name,
+        user_id,
+        submitted_at,
+        points_earned
+      `)
+      .eq("id", bracketId)
+      .single();
+
+    if (bracketError) {
+      return { data: null, error: bracketError.message };
+    }
+
+    // Get user profile
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("username, display_name, avatar_url")
+      .eq("id", bracket.user_id)
+      .single();
+
+    // Get group picks
+    const { data: groupPicksData, error: groupPicksError } = await admin
+      .from("bracket_group_picks")
+      .select("group_label, team_id, position")
+      .eq("bracket_id", bracketId);
+
+    if (groupPicksError) {
+      console.error("[score details] Error fetching group picks:", groupPicksError.message);
+    }
+
+    // Get teams to resolve team codes
+    const { data: teamsData, error: teamsError } = await admin
+      .from("teams")
+      .select("id, code, name")
+      .eq("tournament_id", tournamentId);
+
+    if (teamsError) {
+      console.error("[score details] Error fetching teams:", teamsError.message);
+    }
+
+    const teamMap = new Map(
+      (teamsData || []).map((t: { id: string; code: string; name: string }) => [t.id, { code: t.code, name: t.name }])
+    );
+
+    // Resolve group picks with team codes
+    const groupPicks = (groupPicksData || []).map((p: { group_label: string; team_id: string; position: number }) => {
+      const team = teamMap.get(p.team_id);
+      return {
+        group_label: p.group_label,
+        team_code: team?.code || "",
+        team_name: team?.name || "",
+        position: p.position,
+      };
+    });
+
+    // Get champion pick (from bracket_picks where match round is 'final')
+    const { data: finalMatch } = await admin
+      .from("matches")
+      .select("id")
+      .eq("tournament_id", tournamentId)
+      .eq("round", "final")
+      .single();
+
+    let champion = null;
+    if (finalMatch) {
+      const { data: championPick } = await admin
+        .from("bracket_picks")
+        .select("picked_team_id")
+        .eq("bracket_id", bracketId)
+        .eq("match_id", finalMatch.id)
+        .single();
+
+      if (championPick?.picked_team_id) {
+        const championTeam = teamMap.get(championPick.picked_team_id);
+        champion = championTeam || null;
+      }
+    }
+
+    return {
+      data: {
+        bracket: {
+          ...bracket,
+          username: profile?.username,
+          display_name: profile?.display_name,
+          avatar_url: profile?.avatar_url,
+        },
+        groupPicks,
+        champion,
+      },
+      error: null,
+    };
+  } catch (err) {
+    return {
+      data: null,
+      error: err instanceof Error ? err.message : "Unknown error",
+    };
+  }
+}
+
+/**
  * Fetch group leaderboard for a specific group with eligibility status
  * Shows all members, even if they haven't submitted
  */

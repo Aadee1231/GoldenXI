@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import type { LeaderboardEntry } from "@/src/types";
 import TeamFlag from "@/src/components/ui/TeamFlag";
@@ -19,6 +22,7 @@ function timeAgo(dateStr: string | null): string {
 }
 
 export default function LeaderboardRow({ entry }: Props) {
+  const router = useRouter();
   const displayName = entry.display_name || entry.username || "Unknown Player";
   const initial = displayName.slice(0, 1).toUpperCase();
   const isTop3 = entry.rank <= 3;
@@ -26,6 +30,12 @@ export default function LeaderboardRow({ entry }: Props) {
   // After privacy filtering, all visible users are public — the only remaining
   // question is whether they have a username (needed for /u/:username/bracket).
   const isLinkable = Boolean(entry.username);
+
+  const handleRowClick = () => {
+    if (isLinkable) {
+      router.push(`/u/${entry.username}/bracket`);
+    }
+  };
 
   const content = (
     <>
@@ -65,17 +75,21 @@ export default function LeaderboardRow({ entry }: Props) {
         <p className="truncate text-sm font-semibold text-white">
           {displayName}
           {/* Always reserve space so all rows align; dim when not clickable */}
-          <span
-            className={[
-              "ml-1.5 text-xs font-normal transition-colors",
-              isLinkable
-                ? "text-yellow-400/70 group-hover:text-yellow-400"
-                : "invisible select-none",
-            ].join(" ")}
-            aria-hidden={!isLinkable}
+          {isLinkable && (
+            <Link
+              href={`/u/${entry.username}/bracket`}
+              className="ml-1.5 text-xs font-normal text-yellow-400/70 hover:text-yellow-400 transition-colors"
+            >
+              View bracket
+            </Link>
+          )}
+          {/* Score details link - always visible since bracket_id is always available */}
+          <Link
+            href={`/score/${entry.bracket_id}`}
+            className="ml-2 text-xs font-normal text-blue-400/70 hover:text-blue-400 transition-colors"
           >
-            View bracket
-          </span>
+            Score details
+          </Link>
         </p>
         <p className="truncate text-xs text-zinc-500">{entry.bracket_name}</p>
       </div>
@@ -135,18 +149,8 @@ export default function LeaderboardRow({ entry }: Props) {
     isTop3
       ? "border-yellow-400/30 bg-yellow-400/5 hover:bg-yellow-400/10"
       : "border-white/8 bg-white/[0.03] hover:border-white/15 hover:bg-white/[0.06]",
+    isLinkable ? "cursor-pointer hover:border-yellow-400/40 hover:ring-1 hover:ring-yellow-400/20" : "",
   ].join(" ");
 
-  if (isLinkable) {
-    return (
-      <Link
-        href={`/u/${entry.username}/bracket`}
-        className={`${baseClass} cursor-pointer hover:border-yellow-400/40 hover:ring-1 hover:ring-yellow-400/20`}
-      >
-        {content}
-      </Link>
-    );
-  }
-
-  return <div className={baseClass}>{content}</div>;
+  return <div onClick={handleRowClick} className={baseClass}>{content}</div>;
 }

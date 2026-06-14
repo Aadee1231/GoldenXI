@@ -188,6 +188,15 @@ export function getRoundPointsLabel(round: MatchRound): string {
   return `${points} points`;
 }
 
+export type GroupScoreBreakdown = {
+  groupLabel: string;
+  points: number;
+  reason: "perfect" | "top2" | "top3" | "none" | "not_scored";
+  predictedRanking: Record<number, string>;
+  actualRanking: Record<number, string>;
+  isFinal: boolean;
+};
+
 /**
  * Calculate group-stage points for a single bracket.
  * Compares predicted positions against the live standings in groupStandings.ts.
@@ -202,23 +211,31 @@ export function getRoundPointsLabel(round: MatchRound): string {
 export function calculateGroupScore(
   groupPicks: Array<{ group_label: string; position: number; team_code: string }>
 ): number {
-  let score = 0;
+  const breakdown = calculateGroupScoreBreakdown(groupPicks);
+  return breakdown.reduce((sum, g) => sum + g.points, 0);
+}
 
+/**
+ * Calculate per-group scoring breakdown for a single bracket.
+ * Returns detailed information about each group's score and reason.
+ */
+export function calculateGroupScoreBreakdown(
+  groupPicks: Array<{ group_label: string; position: number; team_code: string }>
+): GroupScoreBreakdown[] {
   const byGroup: Record<string, Array<{ position: number; team_code: string }>> = {};
   for (const p of groupPicks) {
     if (!byGroup[p.group_label]) byGroup[p.group_label] = [];
     byGroup[p.group_label].push({ position: p.position, team_code: p.team_code });
   }
 
-  for (const [groupLabel, picks] of Object.entries(byGroup)) {
-    const standing = groupStandings[groupLabel];
-    if (!standing || standing.standings.length === 0) continue;
+  const breakdown: GroupScoreBreakdown[] = [];
 
-    // Build actual ranking: position (1–4) → team code
-    const actualByPos: Record<number, string> = {};
-    for (const s of standing.standings) {
-      actualByPos[s.position] = s.teamCode;
-    }
+  // Process all groups A-L
+  const allGroups = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
+
+  for (const groupLabel of allGroups) {
+    const picks = byGroup[groupLabel] || [];
+    const standing = groupStandings[groupLabel];
 
     // Build predicted ranking: position (1–4) → team code
     const predictedByPos: Record<number, string> = {};
@@ -226,12 +243,48 @@ export function calculateGroupScore(
       predictedByPos[pick.position] = pick.team_code;
     }
 
+    // If no standing data for this group, mark as not scored
+    if (!standing || standing.standings.length === 0) {
+      breakdown.push({
+        groupLabel,
+        points: 0,
+        reason: "not_scored",
+        predictedRanking: predictedByPos,
+        actualRanking: {},
+        isFinal: false,
+      });
+      continue;
+    }
+
+    // Build actual ranking: position (1–4) → team code
+    const actualByPos: Record<number, string> = {};
+    for (const s of standing.standings) {
+      actualByPos[s.position] = s.teamCode;
+    }
+
     // Require complete data for all 4 positions on both sides
-    if (![1, 2, 3, 4].every(p => actualByPos[p] && predictedByPos[p])) continue;
+    if (![1, 2, 3, 4].every(p => actualByPos[p] && predictedByPos[p])) {
+      breakdown.push({
+        groupLabel,
+        points: 0,
+        reason: "none",
+        predictedRanking: predictedByPos,
+        actualRanking: actualByPos,
+        isFinal: standing.isFinal,
+      });
+      continue;
+    }
 
     // 3 pts: exact full 1–4 order
     if ([1, 2, 3, 4].every(p => predictedByPos[p] === actualByPos[p])) {
-      score += 3;
+      breakdown.push({
+        groupLabel,
+        points: 3,
+        reason: "perfect",
+        predictedRanking: predictedByPos,
+        actualRanking: actualByPos,
+        isFinal: standing.isFinal,
+      });
       continue;
     }
 
@@ -240,7 +293,14 @@ export function calculateGroupScore(
     const actuTop2 = new Set([actualByPos[1], actualByPos[2]]);
     if (predTop2.size === 2 && actuTop2.size === 2 &&
         [...actuTop2].every(t => predTop2.has(t))) {
-      score += 2;
+      breakdown.push({
+        groupLabel,
+        points: 2,
+        reason: "top2",
+        predictedRanking: predictedByPos,
+        actualRanking: actualByPos,
+        isFinal: standing.isFinal,
+      });
       continue;
     }
 
@@ -249,14 +309,29 @@ export function calculateGroupScore(
     const actuTop3 = new Set([actualByPos[1], actualByPos[2], actualByPos[3]]);
     if (predTop3.size === 3 && actuTop3.size === 3 &&
         [...actuTop3].every(t => predTop3.has(t))) {
-      score += 1;
+      breakdown.push({
+        groupLabel,
+        points: 1,
+        reason: "top3",
+        predictedRanking: predictedByPos,
+        actualRanking: actualByPos,
+        isFinal: standing.isFinal,
+      });
       continue;
     }
 
     // 0 pts: none of the above
+    breakdown.push({
+      groupLabel,
+      points: 0,
+      reason: "none",
+      predictedRanking: predictedByPos,
+      actualRanking: actualByPos,
+      isFinal: standing.isFinal,
+    });
   }
 
-  return score;
+  return breakdown;
 }
 
 /**
