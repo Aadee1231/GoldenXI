@@ -7,13 +7,18 @@ import { groupStandings } from "@/src/data/groupStandings";
  * =====================
  * 
  * Knockout round points per correct pick:
- * - Round of 32 (r32):   1 point
+ * - Round of 32 (r32):   4 points
  * - Round of 16 (r16):   6 points
  * - Quarterfinals (qf):  8 points
  * - Semifinals (sf):    12 points
  * - Final (final):      20 points
  * 
- * Group-stage picks are scored separately via calculateGroupScore().
+ * Group-stage points per group (max 3 pts, non-cumulative):
+ * - 3 pts: exact full 1–4 order correct
+ * - 2 pts: correct top-2 teams in any order
+ * - 1 pt:  correct top-3 teams in any order
+ * - 0 pts: none of the above
+ * Max group-stage score: 12 groups × 3 pts = 36 pts
  */
 
 /** Maps each knockout round to its point value */
@@ -187,12 +192,12 @@ export function getRoundPointsLabel(round: MatchRound): string {
  * Calculate group-stage points for a single bracket.
  * Compares predicted positions against the live standings in groupStandings.ts.
  *
- * Scoring:
- * - Exact 1st or 2nd: 3 pts
- * - Both top-2 but wrong exact position: 1 pt
- * - Exact 3rd: 2 pts
- * - Exact 4th: 2 pts
- * - Otherwise: 0 pts
+ * Per-group scoring (non-cumulative — only highest tier is awarded):
+ * - 3 pts: exact full 1–4 order correct
+ * - 2 pts: predicted top-2 set matches actual top-2 set (any order)
+ * - 1 pt:  predicted top-3 set matches actual top-3 set (any order)
+ * - 0 pts: none of the above
+ * Max per group: 3 pts. Max total: 12 × 3 = 36 pts.
  */
 export function calculateGroupScore(
   groupPicks: Array<{ group_label: string; position: number; team_code: string }>
@@ -209,23 +214,46 @@ export function calculateGroupScore(
     const standing = groupStandings[groupLabel];
     if (!standing || standing.standings.length === 0) continue;
 
-    const actualPos: Record<string, number> = {};
+    // Build actual ranking: position (1–4) → team code
+    const actualByPos: Record<number, string> = {};
     for (const s of standing.standings) {
-      actualPos[s.teamCode] = s.position;
+      actualByPos[s.position] = s.teamCode;
     }
 
+    // Build predicted ranking: position (1–4) → team code
+    const predictedByPos: Record<number, string> = {};
     for (const pick of picks) {
-      const actual = actualPos[pick.team_code];
-      if (actual === undefined) continue;
-
-      const predicted = pick.position;
-
-      if (predicted === actual) {
-        score += predicted <= 2 ? 3 : 2;
-      } else if (predicted <= 2 && actual <= 2) {
-        score += 1;
-      }
+      predictedByPos[pick.position] = pick.team_code;
     }
+
+    // Require complete data for all 4 positions on both sides
+    if (![1, 2, 3, 4].every(p => actualByPos[p] && predictedByPos[p])) continue;
+
+    // 3 pts: exact full 1–4 order
+    if ([1, 2, 3, 4].every(p => predictedByPos[p] === actualByPos[p])) {
+      score += 3;
+      continue;
+    }
+
+    // 2 pts: predicted top-2 set matches actual top-2 set (any order)
+    const predTop2 = new Set([predictedByPos[1], predictedByPos[2]]);
+    const actuTop2 = new Set([actualByPos[1], actualByPos[2]]);
+    if (predTop2.size === 2 && actuTop2.size === 2 &&
+        [...actuTop2].every(t => predTop2.has(t))) {
+      score += 2;
+      continue;
+    }
+
+    // 1 pt: predicted top-3 set matches actual top-3 set (any order)
+    const predTop3 = new Set([predictedByPos[1], predictedByPos[2], predictedByPos[3]]);
+    const actuTop3 = new Set([actualByPos[1], actualByPos[2], actualByPos[3]]);
+    if (predTop3.size === 3 && actuTop3.size === 3 &&
+        [...actuTop3].every(t => predTop3.has(t))) {
+      score += 1;
+      continue;
+    }
+
+    // 0 pts: none of the above
   }
 
   return score;
@@ -273,7 +301,9 @@ export function calculateBracketScore(
 
   // Max knockout: 16×r32 + 8×r16 + 4×qf + 2×sf + 1×final
   // = 16×4 + 8×6 + 4×8 + 2×12 + 1×20 = 64+48+32+24+20 = 188
-  const maxScore = 188;
+  // Max group stage: 12 groups × 3 pts = 36
+  // Total max: 188 + 36 = 224
+  const maxScore = 224;
 
   return {
     totalScore,

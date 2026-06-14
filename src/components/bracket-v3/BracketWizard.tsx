@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, Shuffle } from "lucide-react";
+import Link from "next/link";
 import { createClient } from "@/src/lib/supabase/client";
 import { validateBracketComplete } from "@/src/lib/supabase/queries/brackets-client";
 import GroupStageStep from "./GroupStageStep";
@@ -304,10 +305,20 @@ export default function BracketWizard() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 pt-24 pb-32">
       <div className="mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-          Build Your Bracket
-        </h1>
-        <p className="text-gray-400">World Cup 2026 - 48 Teams</p>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
+              Build Your Bracket
+            </h1>
+            <p className="text-gray-400">World Cup 2026 - 48 Teams</p>
+          </div>
+          <Link
+            href="/bracket/how-it-works"
+            className="shrink-0 text-sm text-zinc-400 hover:text-yellow-400 transition-colors"
+          >
+            How bracket works →
+          </Link>
+        </div>
       </div>
 
       <div className="mb-8">

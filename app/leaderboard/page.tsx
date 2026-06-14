@@ -1,4 +1,5 @@
 import { Flame } from "lucide-react";
+import Link from "next/link";
 import { fetchLeaderboard } from "@/src/lib/supabase/queries/leaderboard";
 import { fetchGlobalGoalieLeaderboard } from "@/src/lib/supabase/queries/goalie-leaderboard";
 import LeaderboardRow from "@/src/components/leaderboard/LeaderboardRow";
@@ -68,6 +69,12 @@ export default async function LeaderboardPage({
               ? <>Scoring begins when tournament results are entered.<br className="hidden sm:inline" />Correct picks earn more points in later rounds.</>
               : "Top camera-mode goalkeepers ranked by save performance and reaction speed."}
           </p>
+          <Link
+            href="/leaderboard/how-scoring-works"
+            className="mt-3 inline-block text-sm text-zinc-500 hover:text-yellow-400 transition-colors"
+          >
+            How scoring works →
+          </Link>
         </div>
 
         {/* Tabs */}

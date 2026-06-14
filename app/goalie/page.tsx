@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import GoalieModeGate from "@/src/components/goalie/GoalieModeGate";
 
 export const metadata: Metadata = {
@@ -32,6 +33,12 @@ export default function GoaliePage() {
           <p className="mx-auto mt-3 max-w-md text-sm text-zinc-400 sm:text-base">
             Read the shot and dive in time to save the goal. Start by putting both hands in front of the screen. You got 3 lives, make them count!
           </p>
+          <Link
+            href="/goalie/how-it-works"
+            className="mt-3 inline-block text-sm text-zinc-500 hover:text-yellow-400 transition-colors"
+          >
+            How goalie works →
+          </Link>
         </div>
 
         <GoalieModeGate />

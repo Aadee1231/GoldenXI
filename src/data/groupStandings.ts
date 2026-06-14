@@ -9,14 +9,12 @@
  *   3. Set `isFinal: true` once that group's final match day is complete.
  *   4. Groups omitted from this file award 0 provisional points.
  *
- * Scoring applied per team:
- *   - Predicted 1st AND currently 1st  → 3 pts  (exact)
- *   - Predicted 2nd AND currently 2nd  → 3 pts  (exact)
- *   - Predicted 1st AND currently 2nd  → 1 pt   (both top-2, wrong position)
- *   - Predicted 2nd AND currently 1st  → 1 pt   (both top-2, wrong position)
- *   - Predicted 3rd AND currently 3rd  → 2 pts  (exact)
- *   - Predicted 4th AND currently 4th  → 2 pts  (exact)
- *   - Otherwise                        → 0 pts
+ * Scoring per group (non-cumulative — only highest tier awarded):
+ *   - 3 pts: exact full 1–4 order correct
+ *   - 2 pts: correct top-2 teams in any order
+ *   - 1 pt:  correct top-3 teams in any order
+ *   - 0 pts: none of the above
+ * Max per group: 3 pts.  Max total: 12 groups × 3 = 36 pts.
  *
  * Team codes (FIFA 3-letter) by group:
  *   A: MEX RSA KOR CZE
