@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/src/lib/supabase/server";
+import { ensureProfile } from "@/src/lib/supabase/queries/profiles";
 
 /**
  * Auth callback handler for Supabase email confirmation / magic links.
@@ -45,6 +46,9 @@ export async function GET(request: NextRequest) {
       `${origin}/auth?error=${encodeURIComponent(authError)}`
     );
   }
+
+  // Ensure profile exists for OAuth users (Google, etc.)
+  await ensureProfile();
 
   // Determine where to send the confirmed user.
   let destination = safeNext || "/bracket";
