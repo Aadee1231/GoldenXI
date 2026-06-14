@@ -31,7 +31,12 @@ export default function LeaderboardRow({ entry }: Props) {
   // question is whether they have a username (needed for /u/:username/bracket).
   const isLinkable = Boolean(entry.username);
 
-  const handleRowClick = () => {
+  const handleRowClick = (e: React.MouseEvent) => {
+    // Check if the clicked element or any of its parents is an anchor tag
+    const target = e.target as HTMLElement;
+    if (target.closest('a')) {
+      return; // Do nothing if a link was clicked
+    }
     if (isLinkable) {
       router.push(`/u/${entry.username}/bracket`);
     }

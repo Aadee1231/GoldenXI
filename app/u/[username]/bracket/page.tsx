@@ -80,6 +80,24 @@ async function PublicBracketContent({ username }: { username: string }) {
         </div>
 
         <div className="space-y-8">
+          {/* Navigation buttons */}
+          <div className="flex items-center justify-between gap-4">
+            <Link
+              href="/leaderboard"
+              className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-white transition-colors"
+            >
+              ← Back to leaderboard
+            </Link>
+            {bracket.bracket_id && (
+              <Link
+                href={`/score/${bracket.bracket_id}`}
+                className="inline-flex items-center gap-2 rounded-lg border border-blue-400/30 bg-blue-400/10 px-4 py-2 text-sm font-medium text-blue-400 transition hover:bg-blue-400/20 hover:text-blue-300"
+              >
+                Score details
+              </Link>
+            )}
+          </div>
+
           <ShareCard
             username={bracket.username}
             displayName={bracket.display_name}
