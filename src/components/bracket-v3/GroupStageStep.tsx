@@ -20,15 +20,18 @@ type GroupCardProps = {
 function GroupCard({ groupLabel, teams, rankedTeams, onRankChange }: GroupCardProps) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  const [touchStartY, setTouchStartY] = useState<number | null>(null);
-  const [touchDraggingIndex, setTouchDraggingIndex] = useState<number | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null); // For tap-to-move
+  const [touchDragTimer, setTouchDragTimer] = useState<NodeJS.Timeout | null>(null);
+  const [isTouchDragging, setIsTouchDragging] = useState(false);
 
-  const handleDragStart = (index: number) => {
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    e.dataTransfer.effectAllowed = "move";
     setDraggedIndex(index);
   };
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
     e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
     setDragOverIndex(index);
   };
 
@@ -50,49 +53,93 @@ function GroupCard({ groupLabel, teams, rankedTeams, onRankChange }: GroupCardPr
     setDragOverIndex(null);
   };
 
-  // Touch drag handlers for mobile
+  // Touch drag handlers for mobile with activation delay
   const handleTouchStart = (e: React.TouchEvent, index: number) => {
-    setTouchStartY(e.touches[0].clientY);
-    setTouchDraggingIndex(index);
-  };
+    const touch = e.touches[0];
+    const startY = touch.clientY;
 
-  const handleTouchMove = (e: React.TouchEvent, index: number) => {
-    if (touchDraggingIndex === null) return;
-    e.preventDefault(); // Prevent scrolling while dragging
+    // Start a timer to detect if this is a drag intent
+    const timer = setTimeout(() => {
+      setIsTouchDragging(true);
+      setDraggedIndex(index);
+    }, 200); // 200ms delay before drag starts
 
-    const touchY = e.touches[0].clientY;
-    const element = e.currentTarget;
-    const rect = element.getBoundingClientRect();
-    const elementCenter = rect.top + rect.height / 2;
+    setTouchDragTimer(timer);
 
-    // Determine which element we're over based on touch position
-    const elements = Array.from(element.parentElement?.children || []);
-    const overIndex = elements.findIndex((el) => {
-      const elRect = el.getBoundingClientRect();
-      return touchY >= elRect.top && touchY <= elRect.bottom;
-    });
+    // Track initial Y position
+    const handleTouchMove = (moveEvent: TouchEvent) => {
+      if (isTouchDragging) {
+        moveEvent.preventDefault(); // Prevent scrolling once drag starts
 
-    if (overIndex !== -1 && overIndex !== touchDraggingIndex) {
-      setDragOverIndex(overIndex);
-    }
-  };
+        const moveY = moveEvent.touches[0].clientY;
+        const deltaY = Math.abs(moveY - startY);
 
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchDraggingIndex === null || dragOverIndex === null) {
-      setTouchDraggingIndex(null);
-      setTouchStartY(null);
+        // Only allow drag if moved more than 5px (tolerance)
+        if (deltaY > 5) {
+          // Determine which element we're over
+          const elements = Array.from(document.querySelectorAll(`[data-group="${groupLabel}"] [data-team-index]`));
+          const overIndex = elements.findIndex((el) => {
+            const rect = el.getBoundingClientRect();
+            return moveY >= rect.top && moveY <= rect.bottom;
+          });
+
+          if (overIndex !== -1 && overIndex !== index) {
+            setDragOverIndex(overIndex);
+          }
+        }
+      }
+    };
+
+    const handleTouchEnd = (endEvent: TouchEvent) => {
+      clearTimeout(timer);
+      setTouchDragTimer(null);
+
+      if (isTouchDragging && dragOverIndex !== null && draggedIndex !== null) {
+        // Complete the drag
+        const newRanked = [...rankedTeams];
+        const [draggedTeam] = newRanked.splice(draggedIndex, 1);
+        newRanked.splice(dragOverIndex, 0, draggedTeam);
+        onRankChange(groupLabel, newRanked);
+      }
+
+      setIsTouchDragging(false);
+      setDraggedIndex(null);
       setDragOverIndex(null);
-      return;
+
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd);
+  };
+
+  const handleTouchCancel = () => {
+    if (touchDragTimer) {
+      clearTimeout(touchDragTimer);
+      setTouchDragTimer(null);
     }
-
-    const newRanked = [...rankedTeams];
-    const [draggedTeam] = newRanked.splice(touchDraggingIndex, 1);
-    newRanked.splice(dragOverIndex, 0, draggedTeam);
-
-    onRankChange(groupLabel, newRanked);
-    setTouchDraggingIndex(null);
-    setTouchStartY(null);
+    setIsTouchDragging(false);
+    setDraggedIndex(null);
     setDragOverIndex(null);
+  };
+
+  // Tap-to-move handlers
+  const handleCardTap = (index: number) => {
+    if (selectedIndex === null) {
+      // Select this team
+      setSelectedIndex(index);
+    } else if (selectedIndex === index) {
+      // Deselect
+      setSelectedIndex(null);
+    } else {
+      // Move selected team to this position
+      const newRanked = [...rankedTeams];
+      const [selectedTeam] = newRanked.splice(selectedIndex, 1);
+      newRanked.splice(index, 0, selectedTeam);
+      onRankChange(groupLabel, newRanked);
+      setSelectedIndex(null);
+    }
   };
 
   const moveUp = (index: number) => {
@@ -122,7 +169,7 @@ function GroupCard({ groupLabel, teams, rankedTeams, onRankChange }: GroupCardPr
   const isComplete = rankedTeams.length === 4;
 
   return (
-    <div className="bg-gray-800 rounded-lg border border-gray-700 p-3 sm:p-4">
+    <div className="bg-gray-800 rounded-lg border border-gray-700 p-3 sm:p-4" data-group={groupLabel}>
       <div className="flex items-center justify-between mb-3 sm:mb-4">
         <h3 className="text-lg sm:text-xl font-bold text-white">Group {groupLabel}</h3>
         {isComplete && (
@@ -149,26 +196,36 @@ function GroupCard({ groupLabel, teams, rankedTeams, onRankChange }: GroupCardPr
             badgeColor = "bg-red-600";
           }
 
+          const isSelected = selectedIndex === index;
+          const isDragging = draggedIndex === index;
+
           return (
             <div
               key={team.id}
-              draggable
-              onDragStart={() => handleDragStart(index)}
-              onDragOver={(e) => handleDragOver(e, index)}
-              onDrop={(e) => handleDrop(e, index)}
-              onDragEnd={handleDragEnd}
-              onTouchStart={(e) => handleTouchStart(e, index)}
-              onTouchMove={(e) => handleTouchMove(e, index)}
-              onTouchEnd={handleTouchEnd}
-              className={`flex items-center gap-2 sm:gap-3 bg-gray-900 rounded-lg p-2.5 sm:p-3 border-2 transition-all cursor-move select-none ${
-                draggedIndex === index || touchDraggingIndex === index
-                  ? "opacity-50 border-yellow-400 scale-105"
+              data-team-index={index}
+              onClick={() => handleCardTap(index)}
+              className={`flex items-center gap-2 sm:gap-3 bg-gray-900 rounded-lg p-2.5 sm:p-3 border-2 transition-all select-none relative ${
+                isDragging
+                  ? "opacity-50 border-yellow-400 scale-105 shadow-lg shadow-yellow-400/20"
+                  : isSelected
+                  ? "border-yellow-400 shadow-lg shadow-yellow-400/20"
                   : dragOverIndex === index
                   ? "border-yellow-400"
-                  : "border-gray-700"
+                  : "border-gray-700 hover:border-gray-600"
               }`}
             >
-              <div className="text-gray-500 cursor-grab active:cursor-grabbing shrink-0">
+              <div
+                draggable
+                onDragStart={(e) => handleDragStart(e, index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDrop={(e) => handleDrop(e, index)}
+                onDragEnd={handleDragEnd}
+                onTouchStart={(e) => handleTouchStart(e, index)}
+                onTouchCancel={handleTouchCancel}
+                onClick={(e) => e.stopPropagation()}
+                className="text-gray-500 cursor-grab active:cursor-grabbing shrink-0 touch-action-none p-1"
+                title="Drag to reorder"
+              >
                 <GripVertical className="w-5 h-5" />
               </div>
               <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -207,10 +264,24 @@ function GroupCard({ groupLabel, teams, rankedTeams, onRankChange }: GroupCardPr
                   <ChevronDown className="w-5 h-5 sm:w-4 sm:h-4" />
                 </button>
               </div>
+
+              {isSelected && (
+                <div className="absolute top-1 right-1 text-[10px] text-yellow-400 font-semibold bg-gray-900 px-1.5 py-0.5 rounded border border-yellow-400">
+                  Selected
+                </div>
+              )}
             </div>
           );
         })}
       </div>
+
+      {selectedIndex !== null && (
+        <div className="mt-3 p-2 bg-yellow-900/20 border border-yellow-600/30 rounded-lg">
+          <p className="text-xs text-yellow-400 text-center">
+            Tap another position to move the selected team there, or tap the selected team to cancel.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
