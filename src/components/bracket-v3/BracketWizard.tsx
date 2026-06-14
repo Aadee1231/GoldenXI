@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Shuffle } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/src/lib/supabase/client";
@@ -189,7 +189,6 @@ export default function BracketWizard() {
       if (currentRoundIndex < roundOrder.length - 1) {
         const nextRound = roundOrder[currentRoundIndex + 1];
         setKnockoutRound(nextRound);
-        window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
     }
@@ -287,10 +286,10 @@ export default function BracketWizard() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleKnockoutRoundChange = (round: "r32" | "r16" | "qf" | "sf" | "final", canAdvance: boolean) => {
+  const handleKnockoutRoundChange = useCallback((round: "r32" | "r16" | "qf" | "sf" | "final", canAdvance: boolean) => {
     setKnockoutRound(round);
     setKnockoutRoundComplete(canAdvance);
-  };
+  }, []);
 
   if (isLoadingInitialStep) {
     return (

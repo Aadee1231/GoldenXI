@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getTeamsByGroup } from "@/src/lib/supabase/queries/group-picks-client";
 import { getKnockoutMatches } from "@/src/lib/supabase/queries/brackets-client";
 import { createClient } from "@/src/lib/supabase/client";
@@ -50,13 +50,23 @@ export default function KnockoutBracketStep({
   const [bracketId, setBracketId] = useState<string | null>(null);
   const [currentRound, setCurrentRound] = useState<"r32" | "r16" | "qf" | "sf" | "final">(initialRound);
 
+  // Keep a stable ref to onRoundChange so effects don't re-fire just because
+  // the parent re-renders and produces a new function reference.
+  const onRoundChangeRef = useRef(onRoundChange);
+  useEffect(() => {
+    onRoundChangeRef.current = onRoundChange;
+  });
+
   useEffect(() => {
     loadData();
   }, [groupRankings, thirdPlacePicks]);
 
-  // Sync currentRound with parent's initialRound prop
+  // Sync currentRound when the parent imperatively advances the round (Next button).
+  // Guard against re-triggering when currentRound is already the requested value.
   useEffect(() => {
-    setCurrentRound(initialRound);
+    if (initialRound !== currentRound) {
+      setCurrentRound(initialRound);
+    }
   }, [initialRound]);
 
   useEffect(() => {
@@ -70,14 +80,15 @@ export default function KnockoutBracketStep({
     rebuildMatches();
   }, [picks, qualifiedTeams]);
 
+  // Report current round + completion status to parent.
+  // Uses a ref for the callback so this effect is NOT re-triggered by parent
+  // re-renders that merely produce a new function reference.
   useEffect(() => {
-    if (!onRoundChange) return;
-    
+    if (!onRoundChangeRef.current) return;
     const currentRoundMatches = matches.filter((m) => m.round === currentRound);
     const isCurrentRoundComplete = currentRoundMatches.length > 0 && currentRoundMatches.every((m) => picks[m.id]);
-    
-    onRoundChange(currentRound, isCurrentRoundComplete);
-  }, [currentRound, picks, matches, onRoundChange]);
+    onRoundChangeRef.current(currentRound, isCurrentRoundComplete);
+  }, [currentRound, picks, matches]);
 
   const loadData = async () => {
     setLoading(true);
