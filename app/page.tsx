@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import FeatureCard from "@/src/components/ui/FeatureCard";
 import StatusBadge from "@/src/components/ui/StatusBadge";
@@ -25,6 +26,23 @@ import {
   SoccerBallPattern,
   StadiumFloodlightGlow,
 } from "@/src/components/ui/SoccerPitchBackground";
+
+export const metadata: Metadata = {
+  title:
+    "GoldenXI — World Cup 2026 Bracket Generator, Predictions & Leaderboard",
+  description:
+    "Create your World Cup 2026 bracket, predict every knockout round, compete with friends in private groups, climb the leaderboard, and play AI soccer games like Goalie Camera.",
+  alternates: {
+    canonical: "https://goldenxi.vercel.app",
+  },
+  openGraph: {
+    title:
+      "GoldenXI — World Cup 2026 Bracket Generator, Predictions & Leaderboard",
+    description:
+      "Create your World Cup 2026 bracket, predict every knockout round, compete with friends in private groups, climb the leaderboard, and play AI soccer games like Goalie Camera.",
+    url: "https://goldenxi.vercel.app",
+  },
+};
 
 const features = [
   {
@@ -66,6 +84,31 @@ const stats = [
   { value: "12", label: "Groups" },
   { value: "1", label: "Champion" },
 ];
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "GoldenXI",
+  url: "https://goldenxi.vercel.app",
+  description:
+    "Create your World Cup 2026 bracket, predict every knockout round, compete with friends in private groups, climb the leaderboard, and play AI soccer games.",
+  applicationCategory: "GameApplication",
+  operatingSystem: "Web",
+  genre: "Sports",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+  },
+  featureList: [
+    "World Cup 2026 bracket generator",
+    "Group stage predictions",
+    "Knockout round bracket",
+    "Global leaderboard",
+    "Private friend groups",
+    "AI goalkeeper camera mini-game",
+  ],
+};
 
 export default function HomePage() {
   return (
@@ -170,6 +213,88 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── About GoldenXI (SEO section) ── */}
+      <section className="border-t border-white/10 px-4 py-24 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-4xl">
+          <h2 className="mb-8 text-3xl font-extrabold text-white sm:text-4xl">
+            What is{" "}
+            <span className="bg-gradient-to-r from-yellow-400 to-yellow-500 bg-clip-text text-transparent">
+              GoldenXI
+            </span>
+            ?
+          </h2>
+          <div className="space-y-6 text-base leading-relaxed text-zinc-400">
+            <p>
+              <strong className="text-white">
+                GoldenXI is a free World Cup 2026 bracket generator
+              </strong>{" "}
+              built for football fans who want to go deeper than just watching.
+              Create your complete tournament prediction — rank all 12 groups,
+              select the best third-place qualifiers, and call every knockout
+              round from the Round of 32 through to the Final.
+            </p>
+            <p>
+              The{" "}
+              <strong className="text-white">2026 FIFA World Cup </strong> is the
+              biggest in the competition&apos;s history, featuring{" "}
+              <strong className="text-white">48 national teams</strong> across 12
+              groups, hosted across the United States, Canada, and Mexico. With
+              more teams and more upsets possible, GoldenXI gives you a
+              structured bracket tool to lock in your predictions before the
+              tournament begins.
+            </p>
+            <p>
+              <strong className="text-white">
+                Compete on the global leaderboard
+              </strong>{" "}
+              as the tournament progresses. Points are awarded for correct group
+              picks, knockout round predictions, and your champion call — with
+              later rounds worth significantly more. Watch your rank update live
+              as results come in.
+            </p>
+            <p>
+              <strong className="text-white">
+                Create or join a private group
+              </strong>{" "}
+              with friends, coworkers, or family. Every group gets its own
+              leaderboard so you can settle who really knows the beautiful game.
+              Share your unique group code and invite anyone to join before the
+              tournament kicks off.
+            </p>
+            <p>
+              When you need a break from bracket building, step into goal with
+              the{" "}
+              <strong className="text-white">
+                Goalkeeper Reaction mini-game
+              </strong>
+              . Use your device camera and full-body movements to save penalty
+              shots in real time — an AI-powered soccer game that tests your
+              reflexes and ranks your performance on a separate leaderboard.
+            </p>
+          </div>
+          <div className="mt-10 flex flex-wrap gap-4">
+            <Link
+              href="/bracket"
+              className="rounded-lg bg-yellow-400 px-6 py-3 text-sm font-bold text-black transition hover:bg-yellow-300"
+            >
+              Build Your Bracket
+            </Link>
+            <Link
+              href="/leaderboard"
+              className="rounded-lg border border-white/20 px-6 py-3 text-sm font-bold text-white transition hover:border-white/40"
+            >
+              View Leaderboard
+            </Link>
+            <Link
+              href="/goalie"
+              className="rounded-lg border border-white/20 px-6 py-3 text-sm font-bold text-white transition hover:border-white/40"
+            >
+              Play Goalie Game
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* ── How It Works ── */}
       <section className="relative border-t border-white/10 px-4 py-24 sm:px-6 lg:px-8">
         <div className="relative mx-auto max-w-5xl text-center">
@@ -234,6 +359,11 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      {/* JSON-LD structured data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
     </div>
   );
 }

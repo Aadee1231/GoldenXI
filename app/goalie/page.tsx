@@ -3,9 +3,18 @@ import Link from "next/link";
 import GoalieModeGate from "@/src/components/goalie/GoalieModeGate";
 
 export const metadata: Metadata = {
-  title: "Goalkeeper Reaction — GoldenXI",
+  title: "AI Goalkeeper Reaction Game — Save Penalties with Your Camera",
   description:
-    "Test your reflexes in a fast penalty-save challenge. Dive left, center, or right before the ball beats you.",
+    "Play GoldenXI's AI goalkeeper camera game. Use your webcam and real body movements to save penalty kicks in real time. Compete on the global goalie leaderboard.",
+  alternates: {
+    canonical: "https://goldenxi.vercel.app/goalie",
+  },
+  openGraph: {
+    title: "AI Goalkeeper Reaction Game — GoldenXI",
+    description:
+      "Use your webcam and real body movements to save penalty kicks in real time. AI-powered goalkeeper mini-game.",
+    url: "https://goldenxi.vercel.app/goalie",
+  },
 };
 
 export default function GoaliePage() {

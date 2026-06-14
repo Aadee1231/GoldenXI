@@ -13,7 +13,18 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export const metadata = {
-  title: "Leaderboard | GoldenXI",
+  title: "World Cup 2026 Leaderboard — Bracket Rankings & Goalie Standings",
+  description:
+    "Track your World Cup 2026 bracket score in real time. See global rankings, compete in private groups, and check the Goalkeeper Reaction leaderboard on GoldenXI.",
+  alternates: {
+    canonical: "https://goldenxi.vercel.app/leaderboard",
+  },
+  openGraph: {
+    title: "World Cup 2026 Leaderboard — GoldenXI",
+    description:
+      "Track your World Cup 2026 bracket score live. Global rankings, private groups, and goalie game standings.",
+    url: "https://goldenxi.vercel.app/leaderboard",
+  },
 };
 
 /**
