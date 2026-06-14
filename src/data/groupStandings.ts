@@ -76,8 +76,8 @@ export const groupStandings: Record<string, GroupStanding> = {
     isFinal: false,
     standings: [
       { teamCode: "USA", position: 1 },
-      { teamCode: "TUR", position: 2 },
-      { teamCode: "AUS", position: 3 },
+      { teamCode: "AUS", position: 2 },
+      { teamCode: "TUR", position: 3 },
       { teamCode: "PAR", position: 4 },
     ],
   },
