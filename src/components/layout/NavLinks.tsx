@@ -8,6 +8,7 @@ const navLinks = [
   { href: "/leaderboard", label: "Leaderboard", color: "blue" },
   { href: "/groups", label: "Groups", color: "green" },
   { href: "/goalie", label: "Goalie", color: "gold" },
+  { href: "/pose-off", label: "Pose-Off", color: "purple" },
 ];
 
 export default function NavLinks() {
@@ -30,6 +31,7 @@ export default function NavLinks() {
       blue: "text-blue-400 relative after:absolute after:bottom-[-20px] after:left-0 after:right-0 after:h-0.5 after:bg-blue-400 after:shadow-[0_0_8px_rgba(96,165,250,0.5)]",
       green: "text-green-400 relative after:absolute after:bottom-[-20px] after:left-0 after:right-0 after:h-0.5 after:bg-green-400 after:shadow-[0_0_8px_rgba(74,222,128,0.5)]",
       gold: "text-yellow-400 relative after:absolute after:bottom-[-20px] after:left-0 after:right-0 after:h-0.5 after:bg-yellow-400 after:shadow-[0_0_8px_rgba(250,204,21,0.5)]",
+      purple: "text-purple-400 relative after:absolute after:bottom-[-20px] after:left-0 after:right-0 after:h-0.5 after:bg-purple-400 after:shadow-[0_0_8px_rgba(192,132,252,0.5)]",
     };
 
     return colorMap[color] || "text-white";

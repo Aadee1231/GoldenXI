@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Trophy, BarChart2, Users, Shield, Home } from "lucide-react";
+import { Menu, X, Trophy, BarChart2, Users, Shield, Home, Zap } from "lucide-react";
 
 const navLinks = [
   { href: "/", label: "Home", icon: Home, color: "text-yellow-400" },
@@ -11,6 +11,7 @@ const navLinks = [
   { href: "/leaderboard", label: "Leaderboard", icon: BarChart2, color: "text-blue-400" },
   { href: "/groups", label: "Groups", icon: Users, color: "text-green-400" },
   { href: "/goalie", label: "Goalie", icon: Shield, color: "text-yellow-400" },
+  { href: "/pose-off", label: "Pose-Off", icon: Zap, color: "text-purple-400" },
 ];
 
 export default function MobileMenu() {

@@ -1,31 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import FeatureCard from "@/src/components/ui/FeatureCard";
 import StatusBadge from "@/src/components/ui/StatusBadge";
 import {
   Trophy,
   Users,
-  Zap,
   ShieldCheck,
   ArrowRight,
   Star,
 } from "lucide-react";
-import {
-  FloatingSoccerBalls,
-  TournamentColorBeams,
-  StadiumGrid,
-  GoldSpotlight,
-  RadarGradient,
-  TournamentParticles,
-  StadiumLights,
-  PitchMarkings,
-} from "@/src/components/ui/AnimatedBackground";
-import {
-  SoccerPitchOverlay,
-  PitchGrassPattern,
-  SoccerBallPattern,
-  StadiumFloodlightGlow,
-} from "@/src/components/ui/SoccerPitchBackground";
 
 export const metadata: Metadata = {
   title:
@@ -114,82 +98,97 @@ export default function HomePage() {
   return (
     <div className="flex flex-col">
       {/* ── Hero ── */}
-      <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-4 pt-16 pb-8 text-center sm:px-6 lg:px-8">
-        {/* Background layers - soccer pitch atmosphere */}
-        <PitchGrassPattern />
-        <SoccerPitchOverlay />
-        <StadiumFloodlightGlow />
-        <SoccerBallPattern />
-        <FloatingSoccerBalls />
+      <section className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden px-4 pt-16 pb-8 text-center sm:px-6 lg:px-8">
+        {/* Hero background — mobile */}
+        <Image
+          src="/images/goldenxi-hero-mobile.webp"
+          alt=""
+          fill
+          priority
+          className="object-cover object-center md:hidden"
+          aria-hidden="true"
+        />
+        {/* Hero background — desktop */}
+        <Image
+          src="/images/goldenxi-hero-desktop.webp"
+          alt=""
+          fill
+          priority
+          className="hidden object-cover object-center md:block"
+          aria-hidden="true"
+        />
+        {/* Dark gradient overlay for text readability */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/75"
+        />
 
         <div className="relative z-10 mx-auto max-w-4xl">
           {/* Badge */}
-          <div className="group relative mb-4 sm:mb-6 inline-flex items-center gap-2 overflow-hidden rounded-full border border-yellow-400/40 bg-gradient-to-r from-yellow-400/15 via-yellow-400/10 to-yellow-400/15 px-4 py-1.5 sm:px-5 sm:py-2 text-xs sm:text-sm font-bold text-yellow-400 shadow-lg shadow-yellow-400/10 ring-1 ring-yellow-400/20">
-            {/* Animated glow */}
-            <div className="absolute inset-0 -z-10 animate-pulse-slow bg-yellow-400/20 blur-xl" />
-            <Star className="h-3 w-3 sm:h-4 sm:w-4 animate-pulse-slow" />
-            <span className="hidden sm:inline">World Cup 2026 — Build Your Bracket</span>
-            <span className="sm:hidden">World Cup 2026</span>
+          <div className="mb-4 sm:mb-6 inline-flex items-center gap-2 rounded-full border border-yellow-500/60 bg-black/50 px-4 py-1.5 sm:px-5 sm:py-2 text-xs sm:text-sm font-semibold text-yellow-400 backdrop-blur-sm">
+            <Star className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+            <span>World Cup 2026 — Build Your Bracket</span>
           </div>
 
           {/* Headline */}
-          <h1 className="mb-4 sm:mb-6 text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold leading-tight tracking-tight">
-            <span className="relative inline-block">
-              <span className="absolute inset-0 blur-xl bg-gradient-to-r from-yellow-400 to-yellow-500 opacity-30" />
-              <span className="relative bg-gradient-to-r from-yellow-300 to-yellow-500 bg-clip-text text-transparent">
-                Crown Your Champion
-              </span>
+          <h1 className="mb-4 sm:mb-6 text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold leading-tight tracking-tight text-white [filter:drop-shadow(0_0_28px_rgba(234,179,8,0.30))]">
+            Crown Your{" "}
+            <span className="bg-gradient-to-r from-yellow-300 to-yellow-500 bg-clip-text text-transparent">
+              Champion
             </span>
           </h1>
 
           {/* Tagline */}
-          <p className="mx-auto mb-8 sm:mb-10 max-w-2xl text-base sm:text-lg leading-relaxed text-zinc-400">
+          <p className="mx-auto mb-8 sm:mb-10 max-w-xl text-base sm:text-lg leading-relaxed text-zinc-300">
             Create your full World Cup 2026 tournament prediction, choose your knockout winners, and compete with friends in private GoldenXI groups.
           </p>
 
           {/* CTA buttons */}
-          <div className="flex flex-col items-center justify-center gap-3 sm:gap-4 sm:flex-row w-full px-4">
+          <div className="flex flex-col items-center justify-center gap-3 sm:gap-4 sm:flex-row">
             <Link
               href="/bracket"
-              className="group relative flex items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-yellow-400 to-yellow-500 px-6 py-3.5 sm:px-8 sm:py-4 text-sm sm:text-base font-bold text-black shadow-lg shadow-yellow-400/30 transition-all hover:shadow-yellow-400/50 hover:scale-105 w-full sm:w-auto min-h-[48px]"
+              className="group flex items-center justify-center gap-2 rounded-lg bg-yellow-400 px-7 py-3.5 text-sm sm:text-base font-bold text-black shadow-lg shadow-yellow-400/25 transition-all hover:bg-yellow-300 hover:scale-105 min-h-[48px] w-full sm:w-auto"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 to-yellow-400 opacity-0 transition-opacity group-hover:opacity-100" />
-              <span className="relative">Build My Bracket</span>
-              <ArrowRight className="relative h-4 w-4 transition-transform group-hover:translate-x-1" />
+              Build My Bracket
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
             <Link
               href="/leaderboard"
-              className="group flex items-center justify-center gap-2 rounded-xl border border-blue-400/30 bg-gradient-to-r from-blue-400/10 to-blue-500/10 px-6 py-3.5 sm:px-8 sm:py-4 text-sm sm:text-base font-bold text-white shadow-lg shadow-blue-400/10 ring-1 ring-blue-400/20 backdrop-blur-sm transition-all hover:border-blue-400/50 hover:shadow-blue-400/20 hover:scale-105 w-full sm:w-auto min-h-[48px]"
+              className="group flex items-center justify-center gap-2 rounded-lg border border-white/25 bg-black/40 px-7 py-3.5 text-sm sm:text-base font-bold text-white backdrop-blur-sm transition-all hover:border-white/50 hover:bg-black/60 hover:scale-105 min-h-[48px] w-full sm:w-auto"
             >
               View Leaderboard
             </Link>
           </div>
 
           {/* Stats */}
-          <div className="mt-12 sm:mt-16 flex items-center justify-center gap-6 sm:gap-8 md:gap-12">
+          <div className="mt-10 sm:mt-14 flex items-center justify-center gap-3 sm:gap-4">
             {stats.map((stat, i) => {
               const colors = [
-                { text: "text-red-400", glow: "shadow-red-400/20" },
-                { text: "text-blue-400", glow: "shadow-blue-400/20" },
-                { text: "text-green-400", glow: "shadow-green-400/20" },
+                "text-red-400",
+                "text-blue-400",
+                "text-emerald-400",
               ];
-              const color = colors[i];
               return (
-                <div key={stat.label} className="group text-center">
-                  <div className={`text-2xl sm:text-3xl md:text-4xl font-extrabold transition-all ${color.text} drop-shadow-lg ${color.glow}`}>
+                <div
+                  key={stat.label}
+                  className="flex min-w-[90px] sm:min-w-[110px] flex-col items-center justify-center rounded-2xl border border-white/10 bg-black/50 px-5 py-4 sm:px-7 sm:py-5 backdrop-blur-sm"
+                >
+                  <span className={`text-3xl sm:text-4xl font-extrabold ${colors[i]}`}>
                     {stat.value}
-                  </div>
-                  <div className="mt-1 text-xs sm:text-sm font-semibold uppercase tracking-wider text-zinc-500">{stat.label}</div>
+                  </span>
+                  <span className="mt-1 text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-zinc-400">
+                    {stat.label}
+                  </span>
                 </div>
               );
             })}
           </div>
         </div>
 
-        {/* Bottom fade */}
+        {/* Bottom fade into page */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#080808] to-transparent"
+          className="pointer-events-none absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#080808] via-[#080808]/80 to-transparent"
         />
       </section>
 
