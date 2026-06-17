@@ -30,6 +30,33 @@ async function getActiveTournamentId(): Promise<{ id: string | null; error: stri
 }
 
 /**
+ * Fetches all rows from a Supabase query, bypassing the PostgREST db-max-rows cap (default 1000)
+ * by paging through results with .range() until a page returns fewer rows than pageSize.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function fetchAllPaginated<T>(queryFactory: () => any, pageSize = 1000): Promise<{ data: T[]; error: string | null }> {
+  let all: T[] = [];
+  let from = 0;
+
+  while (true) {
+    const to = from + pageSize - 1;
+    const { data, error } = await queryFactory().range(from, to);
+
+    if (error) {
+      return { data: [], error: error.message };
+    }
+
+    const rows: T[] = data || [];
+    all = all.concat(rows);
+
+    if (rows.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return { data: all, error: null };
+}
+
+/**
  * Fetch global leaderboard for the active tournament
  * Uses RPC function for safe data access and calculates scores client-side
  */
@@ -70,14 +97,16 @@ export async function fetchLeaderboard(
     // This ensures every submitted bracket's picks are always visible,
     // regardless of public_bracket flag or the current user's session.
 
-    const { data: picks, error: picksError } = await admin
-      .from("bracket_picks")
-      .select("bracket_id, match_id, picked_team_id")
-      .in("bracket_id", bracketIds)
-      .limit(10000);
+    const { data: allBracketPicks, error: picksError } = await fetchAllPaginated<{
+      bracket_id: string;
+      match_id: string;
+      picked_team_id: string | null;
+    }>(
+      () => admin.from("bracket_picks").select("bracket_id, match_id, picked_team_id").in("bracket_id", bracketIds)
+    );
 
     if (picksError) {
-      console.error("[leaderboard] Error fetching bracket_picks:", picksError.message);
+      console.error("[leaderboard] Error fetching bracket_picks:", picksError);
     }
 
     const { data: matches, error: matchesError } = await admin
@@ -102,22 +131,29 @@ export async function fetchLeaderboard(
       (teamsData || []).map((t: { id: string; code: string | null }) => [t.id, t.code || ""])
     );
 
-    const { data: groupPicksData, error: groupPicksError } = await admin
-      .from("bracket_group_picks")
-      .select("bracket_id, group_label, team_id, position")
-      .in("bracket_id", bracketIds)
-      .limit(10000);
+    const { data: allGroupPicks, error: groupPicksError } = await fetchAllPaginated<{
+      bracket_id: string;
+      group_label: string;
+      team_id: string;
+      position: number;
+    }>(
+      () => admin.from("bracket_group_picks").select("bracket_id, group_label, team_id, position").in("bracket_id", bracketIds)
+    );
 
     if (groupPicksError) {
-      console.error("[leaderboard] Error fetching bracket_group_picks:", groupPicksError.message);
+      console.error("[leaderboard] Error fetching bracket_group_picks:", groupPicksError);
     }
 
-    // [TEMP DEBUG] Log row counts to verify the row-limit fix
-    console.log(`[leaderboard][DEBUG] brackets=${bracketIds.length} bracket_picks_rows=${picks?.length ?? 0} group_picks_rows=${groupPicksData?.length ?? 0}`);
+    // [TEMP DEBUG] Log row counts to verify the pagination fix
+    console.log("[leaderboard][DEBUG]", {
+      brackets: bracketIds.length,
+      bracket_picks_rows: allBracketPicks.length,
+      group_picks_rows: allGroupPicks.length,
+    });
 
     type ResolvedGroupPick = { group_label: string; position: number; team_code: string };
     const groupPicksByBracket = new Map<string, ResolvedGroupPick[]>();
-    for (const p of (groupPicksData || [])) {
+    for (const p of allGroupPicks) {
       const code = teamCodeMap.get(p.team_id) || "";
       if (!groupPicksByBracket.has(p.bracket_id)) {
         groupPicksByBracket.set(p.bracket_id, []);
@@ -142,7 +178,7 @@ export async function fetchLeaderboard(
       champion_code: string | null;
       champion_flag: string | null;
     }) => {
-      const bracketPicks = (picks || []).filter(p => p.bracket_id === row.bracket_id);
+      const bracketPicks = allBracketPicks.filter(p => p.bracket_id === row.bracket_id);
       const bracketGroupPicks = groupPicksByBracket.get(row.bracket_id) || [];
 
       const groupStageScore = calculateGroupScore(bracketGroupPicks);
@@ -174,10 +210,7 @@ export async function fetchLeaderboard(
         username: row.username,
         display_name: row.display_name,
         avatar_url: row.avatar_url,
-        total_score:
-          row.bracket_id === "f1d30825-7c4c-437f-9cd8-c3a06bb611c5"
-            ? 999
-            : totalScore,
+        total_score: totalScore,
         correct_picks: correctPicks,
         champion_name: row.champion_name,
         champion_flag: row.champion_flag,
@@ -475,14 +508,16 @@ export async function fetchGroupLeaderboard(
 
     // --- All scoring queries use admin client to bypass RLS ---
 
-    const { data: picks, error: picksError } = await admin
-      .from("bracket_picks")
-      .select("bracket_id, match_id, picked_team_id")
-      .in("bracket_id", bracketIds)
-      .limit(10000);
+    const { data: picks, error: picksError } = await fetchAllPaginated<{
+      bracket_id: string;
+      match_id: string;
+      picked_team_id: string | null;
+    }>(
+      () => admin.from("bracket_picks").select("bracket_id, match_id, picked_team_id").in("bracket_id", bracketIds)
+    );
 
     if (picksError) {
-      console.error("[group leaderboard] Error fetching bracket_picks:", picksError.message);
+      console.error("[group leaderboard] Error fetching bracket_picks:", picksError);
     }
 
     const { data: matches, error: matchesError } = await admin
@@ -508,20 +543,18 @@ export async function fetchGroupLeaderboard(
     );
 
     const { data: memberGroupPicksData, error: groupPicksError } = bracketIds.length > 0
-      ? await admin
-          .from("bracket_group_picks")
-          .select("bracket_id, group_label, team_id, position")
-          .in("bracket_id", bracketIds)
-          .limit(10000)
+      ? await fetchAllPaginated<{ bracket_id: string; group_label: string; team_id: string; position: number }>(
+          () => admin.from("bracket_group_picks").select("bracket_id, group_label, team_id, position").in("bracket_id", bracketIds)
+        )
       : { data: [] as Array<{ bracket_id: string; group_label: string; team_id: string; position: number }>, error: null };
 
     if (groupPicksError) {
-      console.error("[group leaderboard] Error fetching bracket_group_picks:", groupPicksError.message);
+      console.error("[group leaderboard] Error fetching bracket_group_picks:", groupPicksError);
     }
 
     type ResolvedGroupPickG = { group_label: string; position: number; team_code: string };
     const memberGroupPicksByBracket = new Map<string, ResolvedGroupPickG[]>();
-    for (const p of (memberGroupPicksData || [])) {
+    for (const p of memberGroupPicksData) {
       const code = groupTeamCodeMap.get(p.team_id) || "";
       if (!memberGroupPicksByBracket.has(p.bracket_id)) {
         memberGroupPicksByBracket.set(p.bracket_id, []);
