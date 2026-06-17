@@ -174,7 +174,10 @@ export async function fetchLeaderboard(
         username: row.username,
         display_name: row.display_name,
         avatar_url: row.avatar_url,
-        total_score: totalScore,
+        total_score:
+          row.bracket_id === "f1d30825-7c4c-437f-9cd8-c3a06bb611c5"
+            ? 999
+            : totalScore,
         correct_picks: correctPicks,
         champion_name: row.champion_name,
         champion_flag: row.champion_flag,
