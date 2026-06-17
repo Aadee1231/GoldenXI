@@ -165,7 +165,7 @@ export async function fetchLeaderboard(
         knockoutScore: knockoutResult.totalScore,
         totalScore,
       });
-
+ 
       return {
         rank: 0, // Will be set after sorting
         bracket_id: row.bracket_id,
