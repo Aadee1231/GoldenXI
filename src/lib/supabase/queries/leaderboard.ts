@@ -3,7 +3,7 @@
 import { createClient } from "@/src/lib/supabase/server";
 import { createAdminClient } from "@/src/lib/supabase/admin";
 import type { LeaderboardEntry } from "@/src/types";
-import { calculateBracketScore } from "@/src/lib/bracket/scoring";
+import { calculateBracketScore, calculateGroupScore } from "@/src/lib/bracket/scoring";
 
 /**
  * Get the active tournament ID
@@ -73,7 +73,8 @@ export async function fetchLeaderboard(
     const { data: picks, error: picksError } = await admin
       .from("bracket_picks")
       .select("bracket_id, match_id, picked_team_id")
-      .in("bracket_id", bracketIds);
+      .in("bracket_id", bracketIds)
+      .limit(10000);
 
     if (picksError) {
       console.error("[leaderboard] Error fetching bracket_picks:", picksError.message);
@@ -104,11 +105,15 @@ export async function fetchLeaderboard(
     const { data: groupPicksData, error: groupPicksError } = await admin
       .from("bracket_group_picks")
       .select("bracket_id, group_label, team_id, position")
-      .in("bracket_id", bracketIds);
+      .in("bracket_id", bracketIds)
+      .limit(10000);
 
     if (groupPicksError) {
       console.error("[leaderboard] Error fetching bracket_group_picks:", groupPicksError.message);
     }
+
+    // [TEMP DEBUG] Log row counts to verify the row-limit fix
+    console.log(`[leaderboard][DEBUG] brackets=${bracketIds.length} bracket_picks_rows=${picks?.length ?? 0} group_picks_rows=${groupPicksData?.length ?? 0}`);
 
     type ResolvedGroupPick = { group_label: string; position: number; team_code: string };
     const groupPicksByBracket = new Map<string, ResolvedGroupPick[]>();
@@ -145,6 +150,9 @@ export async function fetchLeaderboard(
         matches || [],
         bracketGroupPicks
       );
+
+      // [TEMP DEBUG] Log per-bracket score so it can be compared with score-details page
+      console.log(`[leaderboard][DEBUG] bracket_id=${row.bracket_id} display=${row.display_name || row.username} group_picks=${bracketGroupPicks.length} leaderboard_score=${totalScore}`);
 
       return {
         rank: 0, // Will be set after sorting
@@ -388,6 +396,10 @@ export async function fetchBracketForScoreDetails(
       }
     }
 
+    // [TEMP DEBUG] Log score-details total so it can be compared with leaderboard log
+    const scoreDetailsTotal = calculateGroupScore(groupPicks);
+    console.log(`[score-details][DEBUG] bracket_id=${bracketId} group_picks=${groupPicks.length} score_details_total=${scoreDetailsTotal}`);
+
     return {
       data: {
         bracket: {
@@ -451,7 +463,8 @@ export async function fetchGroupLeaderboard(
     const { data: picks, error: picksError } = await admin
       .from("bracket_picks")
       .select("bracket_id, match_id, picked_team_id")
-      .in("bracket_id", bracketIds);
+      .in("bracket_id", bracketIds)
+      .limit(10000);
 
     if (picksError) {
       console.error("[group leaderboard] Error fetching bracket_picks:", picksError.message);
@@ -484,6 +497,7 @@ export async function fetchGroupLeaderboard(
           .from("bracket_group_picks")
           .select("bracket_id, group_label, team_id, position")
           .in("bracket_id", bracketIds)
+          .limit(10000)
       : { data: [] as Array<{ bracket_id: string; group_label: string; team_id: string; position: number }>, error: null };
 
     if (groupPicksError) {
