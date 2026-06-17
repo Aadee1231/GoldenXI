@@ -159,5 +159,5 @@ export default function LeaderboardRow({ entry }: Props) {
     isLinkable ? "cursor-pointer hover:border-yellow-400/40 hover:ring-1 hover:ring-yellow-400/20" : "",
   ].join(" ");
 
-  return <div onClick={handleRowClick} className={baseClass}>{content}</div>;
+  return <div onClick={handleRowClick} className={baseClass} data-user-id={entry.user_id}>{content}</div>;
 }

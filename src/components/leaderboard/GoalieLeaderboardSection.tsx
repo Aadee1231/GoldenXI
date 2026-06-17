@@ -116,6 +116,7 @@ export default function GoalieLeaderboardSection({ entries, error }: Props) {
           return (
             <div
               key={entry.id}
+              data-user-id={entry.user_id}
               className={[
                 "grid grid-cols-[2rem_1fr_5rem_4rem_5rem_5rem_4rem] items-center gap-2 rounded-xl border px-4 py-3.5 transition-all",
                 isTop3

@@ -1,5 +1,6 @@
 import { Flame } from "lucide-react";
 import Link from "next/link";
+import { createClient } from "@/src/lib/supabase/server";
 import { fetchLeaderboard } from "@/src/lib/supabase/queries/leaderboard";
 import {
   fetchGlobalGoalieLeaderboard,
@@ -12,6 +13,7 @@ import LeaderboardEmpty from "@/src/components/leaderboard/LeaderboardEmpty";
 import LeaderboardTabs from "@/src/components/leaderboard/LeaderboardTabs";
 import GoalieLeaderboardSection from "@/src/components/leaderboard/GoalieLeaderboardSection";
 import { hasProvisionalGroups } from "@/src/data/groupStandings";
+import ScrollToMyRank from "@/src/components/leaderboard/ScrollToMyRank";
 import type { LeaderboardEntry } from "@/src/types";
 
 export const dynamic = "force-dynamic";
@@ -50,6 +52,10 @@ export default async function LeaderboardPage({
 }) {
   const { tab = "bracket" } = await searchParams;
   const activeTab = tab === "goalie" ? "goalie" : "bracket";
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const currentUserId = user?.id ?? null;
 
   let entries: LeaderboardEntry[] = [];
   let bracketError: string | null = null;
@@ -199,6 +205,8 @@ export default async function LeaderboardPage({
           <GoalieLeaderboardSection entries={goalieEntries} error={goalieError} />
         )}
       </div>
+
+      <ScrollToMyRank currentUserId={currentUserId} />
     </div>
   );
 }
