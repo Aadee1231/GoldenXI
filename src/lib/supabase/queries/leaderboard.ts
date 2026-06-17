@@ -167,7 +167,7 @@ export async function fetchLeaderboard(
       avatar_url: string | null;
       bracket_name: string;
       submitted_at: string | null;
-      champion_name: string | null;
+      champion_name: string | null; 
       champion_code: string | null;
       champion_flag: string | null;
     }) => {
