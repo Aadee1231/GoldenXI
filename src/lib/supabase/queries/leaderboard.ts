@@ -34,7 +34,7 @@ async function getActiveTournamentId(): Promise<{ id: string | null; error: stri
  * Uses RPC function for safe data access and calculates scores client-side
  */
 export async function fetchLeaderboard(
-  limit = 50
+  limit = 5000
 ): Promise<{ data: LeaderboardEntry[]; error: string | null; knockoutStarted: boolean }> {
   try {
     // Use session client for the RPC (SECURITY DEFINER anyway) and admin client
@@ -145,14 +145,26 @@ export async function fetchLeaderboard(
       const bracketPicks = (picks || []).filter(p => p.bracket_id === row.bracket_id);
       const bracketGroupPicks = groupPicksByBracket.get(row.bracket_id) || [];
 
-      const { totalScore, correctPicks } = calculateBracketScore(
+      const groupStageScore = calculateGroupScore(bracketGroupPicks);
+
+      const knockoutResult = calculateBracketScore(
         bracketPicks,
         matches || [],
-        bracketGroupPicks
+        []
       );
 
-      // [TEMP DEBUG] Log per-bracket score so it can be compared with score-details page
-      console.log(`[leaderboard][DEBUG] bracket_id=${row.bracket_id} display=${row.display_name || row.username} group_picks=${bracketGroupPicks.length} leaderboard_score=${totalScore}`);
+      const totalScore = groupStageScore + knockoutResult.totalScore;
+      const correctPicks = knockoutResult.correctPicks;
+
+      // [TEMP DEBUG] Log scoring breakdown for verification
+      console.log("[leaderboard score debug]", {
+        bracketId: row.bracket_id,
+        displayName: row.display_name || row.username,
+        groupPicksCount: bracketGroupPicks.length,
+        groupStageScore,
+        knockoutScore: knockoutResult.totalScore,
+        totalScore,
+      });
 
       return {
         rank: 0, // Will be set after sorting
@@ -585,11 +597,16 @@ export async function fetchGroupLeaderboard(
       const bracketPicks = (picks || []).filter(p => p.bracket_id === row.bracket_id);
       const bracketGroupPicks = memberGroupPicksByBracket.get(row.bracket_id) || [];
 
-      const { totalScore, correctPicks } = calculateBracketScore(
+      const groupStageScore = calculateGroupScore(bracketGroupPicks);
+
+      const knockoutResult = calculateBracketScore(
         bracketPicks,
         matches || [],
-        bracketGroupPicks
+        []
       );
+
+      const totalScore = groupStageScore + knockoutResult.totalScore;
+      const correctPicks = knockoutResult.correctPicks;
 
       // Ineligible members get 0 score for ranking
       const displayScore = row.is_eligible ? totalScore : 0;
