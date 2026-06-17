@@ -144,13 +144,6 @@ export async function fetchLeaderboard(
       console.error("[leaderboard] Error fetching bracket_group_picks:", groupPicksError);
     }
 
-    // [TEMP DEBUG] Log row counts to verify the pagination fix
-    console.log("[leaderboard][DEBUG]", {
-      brackets: bracketIds.length,
-      bracket_picks_rows: allBracketPicks.length,
-      group_picks_rows: allGroupPicks.length,
-    });
-
     type ResolvedGroupPick = { group_label: string; position: number; team_code: string };
     const groupPicksByBracket = new Map<string, ResolvedGroupPick[]>();
     for (const p of allGroupPicks) {
@@ -192,16 +185,6 @@ export async function fetchLeaderboard(
       const totalScore = groupStageScore + knockoutResult.totalScore;
       const correctPicks = knockoutResult.correctPicks;
 
-      // [TEMP DEBUG] Log scoring breakdown for verification
-      console.log("[leaderboard score debug]", {
-        bracketId: row.bracket_id,
-        displayName: row.display_name || row.username,
-        groupPicksCount: bracketGroupPicks.length,
-        groupStageScore,
-        knockoutScore: knockoutResult.totalScore,
-        totalScore,
-      });
- 
       return {
         rank: 0, // Will be set after sorting
         bracket_id: row.bracket_id,
@@ -443,10 +426,6 @@ export async function fetchBracketForScoreDetails(
         champion = championTeam || null;
       }
     }
-
-    // [TEMP DEBUG] Log score-details total so it can be compared with leaderboard log
-    const scoreDetailsTotal = calculateGroupScore(groupPicks);
-    console.log(`[score-details][DEBUG] bracket_id=${bracketId} group_picks=${groupPicks.length} score_details_total=${scoreDetailsTotal}`);
 
     return {
       data: {
