@@ -124,6 +124,10 @@ export type LeaderboardEntry = {
   is_public?: boolean;
   is_eligible?: boolean;
   eligibility_status?: "eligible" | "not_submitted" | "submitted_late" | "edited_after_lock";
+  /** Present only on demo/seed rows — never set on real user rows. */
+  isSeeded?: boolean;
+  /** 'seed' for demo rows, 'real' or absent for real user rows. */
+  source?: "seed" | "real";
 };
 
 export type GroupSettings = {

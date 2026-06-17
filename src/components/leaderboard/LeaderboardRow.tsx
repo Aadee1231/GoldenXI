@@ -88,13 +88,15 @@ export default function LeaderboardRow({ entry }: Props) {
               View bracket
             </Link>
           )}
-          {/* Score details link - always visible since bracket_id is always available */}
-          <Link
-            href={`/score/${entry.bracket_id}`}
-            className="ml-2 text-xs font-normal text-blue-400/70 hover:text-blue-400 transition-colors"
-          >
-            Score details
-          </Link>
+          {/* Score details link - only for real users with a valid bracket submission */}
+          {!entry.isSeeded && (
+            <Link
+              href={`/score/${entry.bracket_id}`}
+              className="ml-2 text-xs font-normal text-blue-400/70 hover:text-blue-400 transition-colors"
+            >
+              Score details
+            </Link>
+          )}
         </p>
         <p className="truncate text-xs text-zinc-500">{entry.bracket_name}</p>
       </div>

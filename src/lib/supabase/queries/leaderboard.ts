@@ -198,6 +198,99 @@ export async function fetchLeaderboard(
   }
 }
 
+// ---------------------------------------------------------------------------
+// Bracket seed entries (public.leaderboard_seed_entries)
+// ---------------------------------------------------------------------------
+
+type BracketSeedEntry = {
+  id: string;
+  username: string | null;
+  avatar_initial: string | null;
+  bracket_name: string | null;
+  champion_name: string | null;
+  champion_flag: string | null;
+  points: number | null;
+  created_at: string;
+};
+
+/**
+ * Fetch active bracket seed entries from public.leaderboard_seed_entries.
+ * Returns an empty array on any error so the real leaderboard is never blocked.
+ */
+export async function fetchBracketSeedEntries(): Promise<LeaderboardEntry[]> {
+  try {
+    const supabase = await createClient();
+
+    const { data, error } = await supabase
+      .from("leaderboard_seed_entries")
+      .select("id,username,avatar_initial,bracket_name,champion_name,champion_flag,points,created_at")
+      .eq("leaderboard_type", "bracket")
+      .eq("is_active", true);
+
+    if (error) {
+      console.warn("[leaderboard] fetchBracketSeedEntries:", error.message);
+      return [];
+    }
+
+    return ((data ?? []) as BracketSeedEntry[]).map((row) => ({
+      rank: 0,
+      bracket_id: `seed:${row.id}`,
+      bracket_name: row.bracket_name || "My Bracket",
+      user_id: `seed:${row.id}`,
+      username: null,
+      display_name: row.username ?? "Demo Player",
+      avatar_url: null,
+      total_score: row.points ?? 0,
+      correct_picks: 0,
+      champion_name: row.champion_name ?? null,
+      champion_flag: row.champion_flag ?? null,
+      champion_code: null,
+      submitted_at: row.created_at,
+      is_public: false,
+      isSeeded: true,
+      source: "seed" as const,
+    }));
+  } catch (err) {
+    console.warn(
+      "[leaderboard] fetchBracketSeedEntries exception:",
+      err instanceof Error ? err.message : err,
+    );
+    return [];
+  }
+}
+
+/**
+ * Merges real bracket leaderboard rows with seeded rows.
+ * Sort order mirrors fetchLeaderboard: total_score DESC → correct_picks DESC → submitted_at ASC.
+ * Recalculates rank after merge.
+ *
+ * Seed rows are identifiable via `isSeeded: true` / `source: 'seed'`.
+ * To disable seeds, set `is_active = false` in public.leaderboard_seed_entries.
+ */
+export async function mergeBracketLeaderboard(
+  real: LeaderboardEntry[],
+  seeded: LeaderboardEntry[],
+): Promise<LeaderboardEntry[]> {
+  const merged = [...real, ...seeded];
+
+  merged.sort((a, b) => {
+    if (b.total_score !== a.total_score) return b.total_score - a.total_score;
+    if (b.correct_picks !== a.correct_picks) return b.correct_picks - a.correct_picks;
+    if (a.submitted_at && b.submitted_at) {
+      return new Date(a.submitted_at).getTime() - new Date(b.submitted_at).getTime();
+    }
+    if (a.submitted_at && !b.submitted_at) return -1;
+    if (!a.submitted_at && b.submitted_at) return 1;
+    return 0;
+  });
+
+  merged.forEach((entry, i) => {
+    entry.rank = i + 1;
+  });
+
+  return merged;
+}
+
 /**
  * Fetch bracket data for score details page
  */

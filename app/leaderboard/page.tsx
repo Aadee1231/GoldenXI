@@ -1,7 +1,12 @@
 import { Flame } from "lucide-react";
 import Link from "next/link";
 import { fetchLeaderboard } from "@/src/lib/supabase/queries/leaderboard";
-import { fetchGlobalGoalieLeaderboard } from "@/src/lib/supabase/queries/goalie-leaderboard";
+import {
+  fetchGlobalGoalieLeaderboard,
+  fetchGoalieSeedEntries,
+  mergeGoalieLeaderboard,
+  type GoalieCameraLeaderboardRow,
+} from "@/src/lib/supabase/queries/goalie-leaderboard";
 import LeaderboardRow from "@/src/components/leaderboard/LeaderboardRow";
 import LeaderboardEmpty from "@/src/components/leaderboard/LeaderboardEmpty";
 import LeaderboardTabs from "@/src/components/leaderboard/LeaderboardTabs";
@@ -46,15 +51,26 @@ export default async function LeaderboardPage({
   const { tab = "bracket" } = await searchParams;
   const activeTab = tab === "goalie" ? "goalie" : "bracket";
 
-  const { data: entries, error: bracketError } =
-    activeTab === "bracket"
-      ? await fetchLeaderboard(75)
-      : { data: [] as Awaited<ReturnType<typeof fetchLeaderboard>>["data"], error: null };
+  let entries: LeaderboardEntry[] = [];
+  let bracketError: string | null = null;
 
-  const { data: goalieEntries, error: goalieError } =
-    activeTab === "goalie"
-      ? await fetchGlobalGoalieLeaderboard(50)
-      : { data: [] as Awaited<ReturnType<typeof fetchGlobalGoalieLeaderboard>>["data"], error: null };
+  if (activeTab === "bracket") {
+    const result = await fetchLeaderboard(75);
+    bracketError = result.error;
+    entries = result.data;
+  }
+
+  let goalieEntries: GoalieCameraLeaderboardRow[] = [];
+  let goalieError: string | null = null;
+
+  if (activeTab === "goalie") {
+    const [realResult, seedEntries] = await Promise.all([
+      fetchGlobalGoalieLeaderboard(50),
+      fetchGoalieSeedEntries(),
+    ]);
+    goalieError = realResult.error;
+    goalieEntries = await mergeGoalieLeaderboard(realResult.data, seedEntries);
+  }
 
   return (
     <div className="relative min-h-screen px-4 py-24">

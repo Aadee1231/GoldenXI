@@ -118,9 +118,8 @@ export default function ThirdPlaceStep({
   const handleAutoPick = () => {
     if (thirdPlaceTeams.length < 8) return;
 
-    // Select exactly 8 eligible third-place teams deterministically (by group
-    // order), so auto-pick always produces a valid, reproducible selection.
-    const picks = thirdPlaceTeams.slice(0, 8).map((t) => t.id);
+    const shuffled = [...thirdPlaceTeams].sort(() => Math.random() - 0.5);
+    const picks = shuffled.slice(0, 8).map((t) => t.id);
     onChange(picks);
   };
 
