@@ -55,10 +55,10 @@ export const groupStandings: Record<string, GroupStanding> = {
   B: {
     isFinal: false,
     standings: [
-      { teamCode: "SUI", position: 1 },
-      { teamCode: "CAN", position: 2 },
-      { teamCode: "QAT", position: 3 },
-      { teamCode: "BIH", position: 4 },
+      { teamCode: "CAN", position: 1 },
+      { teamCode: "SUI", position: 2 },
+      { teamCode: "BIH", position: 3 },
+      { teamCode: "QAT", position: 4 },
     ],
   },
 
@@ -101,6 +101,67 @@ export const groupStandings: Record<string, GroupStanding> = {
       { teamCode: "TUN", position: 4 },
     ],
   },
+
+  G: {
+    isFinal: false,
+    standings: [
+      { teamCode: "NZL", position: 1 },
+      { teamCode: "IRN", position: 2 },
+      { teamCode: "BEL", position: 3 },
+      { teamCode: "EGY", position: 4 },
+    ],
+  },
+
+  H: {
+    isFinal: false,
+    standings: [
+      { teamCode: "URU", position: 1 },
+      { teamCode: "KSA", position: 2 },
+      { teamCode: "ESP", position: 3 },
+      { teamCode: "CPV", position: 4 },
+    ],
+  },
+
+  I: {
+    isFinal: false,
+    standings: [
+      { teamCode: "NOR", position: 1 },
+      { teamCode: "FRA", position: 2 },
+      { teamCode: "SEN", position: 3 },
+      { teamCode: "IRQ", position: 4 },
+    ],
+  }, 
+
+  J: {
+    isFinal: false,
+    standings: [
+      { teamCode: "ARG", position: 1 },
+      { teamCode: "AUT", position: 2 },
+      { teamCode: "JOR", position: 3 },
+      { teamCode: "ALG", position: 4 },
+    ],
+  },
+
+  K: {
+    isFinal: false,
+    standings: [
+      { teamCode: "COL", position: 1 },
+      { teamCode: "COD", position: 2 },
+      { teamCode: "POR", position: 3 },
+      { teamCode: "UZB", position: 4 },
+    ],
+  },
+
+  L: {
+    isFinal: false,
+    standings: [
+      { teamCode: "ENG", position: 1 },
+      { teamCode: "GHA", position: 2 },
+      { teamCode: "PAN", position: 3 },
+      { teamCode: "CRO", position: 4 },
+    ],
+  },
+
 
 
   // Add groups here as their real results come in.
