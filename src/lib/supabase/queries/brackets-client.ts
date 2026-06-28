@@ -73,24 +73,8 @@ async function getOrCreateBracket(
     return { bracket: existingBrackets[0] as Bracket, error: null };
   }
 
-  const { data: newBracket, error: insertError } = await supabase
-    .from("brackets")
-    .insert({
-      user_id: user.id,
-      tournament_id: tournamentId,
-      name: bracketName,
-      points_earned: 0,
-      is_locked: false,
-      status: "draft",
-    })
-    .select()
-    .single();
-
-  if (insertError) {
-    return { bracket: null, error: insertError.message };
-  }
-
-  return { bracket: newBracket as Bracket, error: null };
+  // Bracket submissions are closed — no new brackets can be created
+  return { bracket: null, error: "Bracket submissions are closed." };
 }
 
 /**

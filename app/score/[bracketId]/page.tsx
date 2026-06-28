@@ -17,6 +17,24 @@ type Props = {
   params: Promise<{ bracketId: string }>;
 };
 
+const ROUND_LABELS: Record<string, string> = {
+  r32: "Round of 32",
+  r16: "Round of 16",
+  qf: "Quarterfinals",
+  sf: "Semifinals",
+  final: "Final",
+};
+
+const ROUND_POINTS: Record<string, number> = {
+  r32: 4,
+  r16: 6,
+  qf: 8,
+  sf: 12,
+  final: 20,
+};
+
+const ROUND_ORDER = ["r32", "r16", "qf", "sf", "final"];
+
 function getReasonText(reason: GroupScoreBreakdown["reason"]): string {
   switch (reason) {
     case "perfect":
@@ -79,10 +97,33 @@ export default async function ScoreDetailsPage({ params }: Props) {
     notFound();
   }
 
-  const { bracket, groupPicks, champion } = data;
+  const { bracket, groupPicks, knockoutPicks, champion } = data;
   const displayName = bracket.display_name || bracket.username || "Unknown Player";
-  const breakdown = calculateGroupScoreBreakdown(groupPicks);
-  const totalGroupScore = breakdown.reduce((sum, g) => sum + g.points, 0);
+
+  // Group stage scoring
+  const groupBreakdown = calculateGroupScoreBreakdown(groupPicks);
+  const totalGroupScore = groupBreakdown.reduce((sum, g) => sum + g.points, 0);
+
+  // Knockout scoring — only count picks where the match result is known
+  const knockoutByRound: Record<string, { correct: number; total: number; pts: number }> = {};
+  let totalKnockoutScore = 0;
+  for (const pick of knockoutPicks) {
+    const round = pick.round;
+    if (!ROUND_LABELS[round]) continue; // skip group-round picks
+    if (!knockoutByRound[round]) knockoutByRound[round] = { correct: 0, total: 0, pts: 0 };
+    knockoutByRound[round].total++;
+    if (pick.match_completed && pick.match_winner_id) {
+      const pts = pick.is_correct ? (ROUND_POINTS[round] ?? 0) : 0;
+      if (pick.is_correct) {
+        knockoutByRound[round].correct++;
+        knockoutByRound[round].pts += pts;
+        totalKnockoutScore += pts;
+      }
+    }
+  }
+
+  const totalScore = totalGroupScore + totalKnockoutScore;
+  const anyKnockoutResults = knockoutPicks.some(p => p.match_completed && p.match_winner_id && ROUND_LABELS[p.round]);
 
   return (
     <div className="relative min-h-screen px-4 py-24 pb-32">
@@ -126,7 +167,12 @@ export default async function ScoreDetailsPage({ params }: Props) {
                 <div className="flex items-center gap-2">
                   <Trophy className="h-4 w-4 text-yellow-400" />
                   <span className="text-zinc-400">Total:</span>
-                  <span className="text-lg font-bold text-white">{totalGroupScore} pts</span>
+                  <span className="text-lg font-bold text-white">{totalScore} pts</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-zinc-500">
+                  <span>Groups: <span className="text-zinc-300 font-semibold">{totalGroupScore}</span></span>
+                  <span>·</span>
+                  <span>Knockout: <span className="text-zinc-300 font-semibold">{totalKnockoutScore}</span></span>
                 </div>
                 {champion && (
                   <div className="flex items-center gap-2">
@@ -152,10 +198,67 @@ export default async function ScoreDetailsPage({ params }: Props) {
           </div>
         )}
 
-        {/* Group breakdown */}
+        {/* ── Knockout Breakdown ── */}
+        {anyKnockoutResults && (
+          <div className="mb-8 space-y-3">
+            <h2 className="text-lg font-semibold text-white">Knockout Stage</h2>
+            {ROUND_ORDER.filter(r => knockoutByRound[r]).map(round => {
+              const rd = knockoutByRound[round];
+              const picksInRound = knockoutPicks.filter(p => p.round === round && ROUND_LABELS[p.round]);
+              return (
+                <div key={round} className="rounded-xl border border-white/8 bg-white/[0.03] p-4">
+                  <div className="mb-3 flex items-center justify-between">
+                    <span className="text-sm font-semibold text-white">{ROUND_LABELS[round]}</span>
+                    <span className="text-sm font-bold text-yellow-400">{rd.pts} pts</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {picksInRound.map(pick => {
+                      const decided = pick.match_completed && pick.match_winner_id;
+                      return (
+                        <div
+                          key={pick.match_id}
+                          className={`flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-xs ${
+                            !decided
+                              ? "bg-white/[0.02] text-zinc-500"
+                              : pick.is_correct
+                              ? "bg-green-400/10 text-green-300"
+                              : "bg-red-400/8 text-red-400"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            {decided ? (
+                              pick.is_correct ? (
+                                <CheckCircle className="h-3.5 w-3.5 shrink-0" />
+                              ) : (
+                                <XCircle className="h-3.5 w-3.5 shrink-0" />
+                              )
+                            ) : (
+                              <Clock className="h-3.5 w-3.5 shrink-0 text-zinc-600" />
+                            )}
+                            <span className="font-medium">{pick.picked_team_code || "—"}</span>
+                            {decided && !pick.is_correct && pick.match_winner_code && (
+                              <span className="text-zinc-500">
+                                (won: <span className="text-zinc-400">{pick.match_winner_code}</span>)
+                              </span>
+                            )}
+                          </div>
+                          <span className="font-semibold tabular-nums">
+                            {decided ? (pick.is_correct ? `+${ROUND_POINTS[round]}` : "0") : "—"} pts
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ── Group Stage Breakdown ── */}
         <div className="space-y-3">
-          <h2 className="text-lg font-semibold text-white">Group Stage Breakdown</h2>
-          {breakdown.map((group) => (
+          <h2 className="text-lg font-semibold text-white">Group Stage</h2>
+          {groupBreakdown.map((group) => (
             <div
               key={group.groupLabel}
               className={`rounded-xl border p-4 ${getReasonBg(group.reason)}`}
@@ -233,7 +336,9 @@ export default async function ScoreDetailsPage({ params }: Props) {
         {/* Scoring rules reminder */}
         <div className="mt-8 rounded-lg border border-blue-400/10 bg-blue-400/5 p-4">
           <p className="text-xs leading-relaxed text-zinc-500">
-            <strong className="text-zinc-400">Group Stage Scoring:</strong> 3 pts = perfect order · 2 pts = correct top 2 · 1 pt = correct top 3 · 0 pts = no match
+            <strong className="text-zinc-400">Group Stage:</strong> 3 pts = perfect order · 2 pts = correct top 2 · 1 pt = correct top 3
+            <br />
+            <strong className="text-zinc-400">Knockout:</strong> R32 4 pts · R16 6 pts · QF 8 pts · SF 12 pts · Final 20 pts
           </p>
         </div>
       </div>

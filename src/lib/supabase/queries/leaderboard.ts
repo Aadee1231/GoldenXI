@@ -335,7 +335,16 @@ export async function mergeBracketLeaderboard(
  */
 export async function fetchBracketForScoreDetails(
   bracketId: string
-): Promise<{ data: { bracket: any; groupPicks: any[]; champion: any } | null; error: string | null }> {
+): Promise<{
+  data: {
+    bracket: any;
+    groupPicks: any[];
+    knockoutPicks: Array<{ match_id: string; picked_team_id: string | null; round: string; picked_team_name: string | null; picked_team_code: string | null; is_correct: boolean | null; points_awarded: number | null; match_completed: boolean; match_winner_id: string | null; match_winner_code: string | null; match_winner_name: string | null }>;
+    matches: Array<{ id: string; round: string; completed: boolean; winner_id: string | null }>;
+    champion: any;
+  } | null;
+  error: string | null;
+}> {
   try {
     const admin = createAdminClient();
 
@@ -369,16 +378,6 @@ export async function fetchBracketForScoreDetails(
       .eq("id", bracket.user_id)
       .single();
 
-    // Get group picks
-    const { data: groupPicksData, error: groupPicksError } = await admin
-      .from("bracket_group_picks")
-      .select("group_label, team_id, position")
-      .eq("bracket_id", bracketId);
-
-    if (groupPicksError) {
-      console.error("[score details] Error fetching group picks:", groupPicksError.message);
-    }
-
     // Get teams to resolve team codes
     const { data: teamsData, error: teamsError } = await admin
       .from("teams")
@@ -393,6 +392,16 @@ export async function fetchBracketForScoreDetails(
       (teamsData || []).map((t: { id: string; code: string; name: string }) => [t.id, { code: t.code, name: t.name }])
     );
 
+    // Get group picks
+    const { data: groupPicksData, error: groupPicksError } = await admin
+      .from("bracket_group_picks")
+      .select("group_label, team_id, position")
+      .eq("bracket_id", bracketId);
+
+    if (groupPicksError) {
+      console.error("[score details] Error fetching group picks:", groupPicksError.message);
+    }
+
     // Resolve group picks with team codes
     const groupPicks = (groupPicksData || []).map((p: { group_label: string; team_id: string; position: number }) => {
       const team = teamMap.get(p.team_id);
@@ -404,23 +413,56 @@ export async function fetchBracketForScoreDetails(
       };
     });
 
-    // Get champion pick (from bracket_picks where match round is 'final')
-    const { data: finalMatch } = await admin
+    // Get all knockout matches for this tournament
+    const { data: matchesData, error: matchesError } = await admin
       .from("matches")
-      .select("id")
+      .select("id, round, completed, winner_id")
       .eq("tournament_id", tournamentId)
-      .eq("round", "final")
-      .single();
+      .neq("round", "group");
+
+    if (matchesError) {
+      console.error("[score details] Error fetching matches:", matchesError.message);
+    }
+
+    const matches = (matchesData || []) as Array<{ id: string; round: string; completed: boolean; winner_id: string | null }>;
+
+    // Get knockout picks for this bracket
+    const { data: knockoutPicksData, error: knockoutPicksError } = await admin
+      .from("bracket_picks")
+      .select("match_id, picked_team_id, is_correct, points_awarded")
+      .eq("bracket_id", bracketId);
+
+    if (knockoutPicksError) {
+      console.error("[score details] Error fetching knockout picks:", knockoutPicksError.message);
+    }
+
+    const matchMap = new Map(matches.map(m => [m.id, m]));
+
+    const knockoutPicks = (knockoutPicksData || []).map((p: { match_id: string; picked_team_id: string | null; is_correct: boolean | null; points_awarded: number | null }) => {
+      const match = matchMap.get(p.match_id);
+      const pickedTeam = p.picked_team_id ? teamMap.get(p.picked_team_id) : null;
+      const winnerTeam = match?.winner_id ? teamMap.get(match.winner_id) : null;
+      return {
+        match_id: p.match_id,
+        picked_team_id: p.picked_team_id,
+        round: match?.round || "unknown",
+        picked_team_name: pickedTeam?.name || null,
+        picked_team_code: pickedTeam?.code || null,
+        is_correct: p.is_correct,
+        points_awarded: p.points_awarded,
+        match_completed: match?.completed || false,
+        match_winner_id: match?.winner_id || null,
+        match_winner_code: winnerTeam?.code || null,
+        match_winner_name: winnerTeam?.name || null,
+      };
+    });
+
+    // Get champion pick (from bracket_picks where match round is 'final')
+    const finalMatch = matches.find(m => m.round === "final");
 
     let champion = null;
     if (finalMatch) {
-      const { data: championPick } = await admin
-        .from("bracket_picks")
-        .select("picked_team_id")
-        .eq("bracket_id", bracketId)
-        .eq("match_id", finalMatch.id)
-        .single();
-
+      const championPick = (knockoutPicksData || []).find((p: { match_id: string }) => p.match_id === finalMatch.id);
       if (championPick?.picked_team_id) {
         const championTeam = teamMap.get(championPick.picked_team_id);
         champion = championTeam || null;
@@ -436,6 +478,8 @@ export async function fetchBracketForScoreDetails(
           avatar_url: profile?.avatar_url,
         },
         groupPicks,
+        knockoutPicks,
+        matches,
         champion,
       },
       error: null,

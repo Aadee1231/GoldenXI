@@ -43,47 +43,47 @@ export type GroupStanding = {
 
 export const groupStandings: Record<string, GroupStanding> = {
   A: {
-    isFinal: false,
+    isFinal: true,
     standings: [
       { teamCode: "MEX", position: 1 },
-      { teamCode: "KOR", position: 2 },
-      { teamCode: "CZE", position: 3 },
-      { teamCode: "RSA", position: 4 },
+      { teamCode: "RSA", position: 2 },
+      { teamCode: "KOR", position: 3 },
+      { teamCode: "CZE", position: 4 },
     ],
   },
 
   B: {
-    isFinal: false,
+    isFinal: true,
     standings: [
-      { teamCode: "CAN", position: 1 },
-      { teamCode: "SUI", position: 2 },
+      { teamCode: "SUI", position: 1 },
+      { teamCode: "CAN", position: 2 },
       { teamCode: "BIH", position: 3 },
       { teamCode: "QAT", position: 4 },
     ],
   },
 
   C: {
-    isFinal: false,
+    isFinal: true,
     standings: [
-      { teamCode: "SCO", position: 1 },
+      { teamCode: "BRA", position: 1 },
       { teamCode: "MAR", position: 2 },
-      { teamCode: "BRA", position: 3 },
+      { teamCode: "SCO", position: 3 },
       { teamCode: "HAI", position: 4 },
     ],
   },
 
   D: {
-    isFinal: false,
+    isFinal: true,
     standings: [
       { teamCode: "USA", position: 1 },
       { teamCode: "AUS", position: 2 },
-      { teamCode: "TUR", position: 3 },
-      { teamCode: "PAR", position: 4 },
+      { teamCode: "PAR", position: 3 },
+      { teamCode: "TUR", position: 4 },
     ],
   },
 
   E: {
-    isFinal: false,
+    isFinal: true,
     standings: [
       { teamCode: "GER", position: 1 },
       { teamCode: "CIV", position: 2 },
@@ -93,79 +93,74 @@ export const groupStandings: Record<string, GroupStanding> = {
   },
 
   F: {
-    isFinal: false,
+    isFinal: true,
     standings: [
-      { teamCode: "SWE", position: 1 },
+      { teamCode: "NED", position: 1 },
       { teamCode: "JPN", position: 2 },
-      { teamCode: "NED", position: 3 },
+      { teamCode: "SWE", position: 3 },
       { teamCode: "TUN", position: 4 },
     ],
   },
 
   G: {
-    isFinal: false,
+    isFinal: true,
     standings: [
-      { teamCode: "NZL", position: 1 },
-      { teamCode: "IRN", position: 2 },
-      { teamCode: "BEL", position: 3 },
-      { teamCode: "EGY", position: 4 },
+      { teamCode: "BEL", position: 1 },
+      { teamCode: "EGY", position: 2 },
+      { teamCode: "IRN", position: 3 },
+      { teamCode: "NZL", position: 4 },
     ],
   },
 
   H: {
-    isFinal: false,
+    isFinal: true,
     standings: [
-      { teamCode: "URU", position: 1 },
-      { teamCode: "KSA", position: 2 },
-      { teamCode: "ESP", position: 3 },
-      { teamCode: "CPV", position: 4 },
+      { teamCode: "ESP", position: 1 },
+      { teamCode: "CPV", position: 2 },
+      { teamCode: "URU", position: 3 },
+      { teamCode: "KSA", position: 4 },
     ],
   },
 
   I: {
-    isFinal: false,
+    isFinal: true,
     standings: [
-      { teamCode: "NOR", position: 1 },
-      { teamCode: "FRA", position: 2 },
+      { teamCode: "FRA", position: 1 },
+      { teamCode: "NOR", position: 2 },
       { teamCode: "SEN", position: 3 },
       { teamCode: "IRQ", position: 4 },
     ],
-  }, 
+  },
 
   J: {
-    isFinal: false,
+    isFinal: true,
     standings: [
       { teamCode: "ARG", position: 1 },
       { teamCode: "AUT", position: 2 },
-      { teamCode: "JOR", position: 3 },
-      { teamCode: "ALG", position: 4 },
+      { teamCode: "ALG", position: 3 },
+      { teamCode: "JOR", position: 4 },
     ],
   },
 
   K: {
-    isFinal: false,
+    isFinal: true,
     standings: [
       { teamCode: "COL", position: 1 },
-      { teamCode: "COD", position: 2 },
-      { teamCode: "POR", position: 3 },
+      { teamCode: "POR", position: 2 },
+      { teamCode: "COD", position: 3 },
       { teamCode: "UZB", position: 4 },
     ],
   },
 
   L: {
-    isFinal: false,
+    isFinal: true,
     standings: [
       { teamCode: "ENG", position: 1 },
-      { teamCode: "GHA", position: 2 },
-      { teamCode: "PAN", position: 3 },
-      { teamCode: "CRO", position: 4 },
+      { teamCode: "CRO", position: 2 },
+      { teamCode: "GHA", position: 3 },
+      { teamCode: "PAN", position: 4 },
     ],
   },
-
-
-
-  // Add groups here as their real results come in.
-  // Groups not listed give 0 provisional points.
 };
 
 /**

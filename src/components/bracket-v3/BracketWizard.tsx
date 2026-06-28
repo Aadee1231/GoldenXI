@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { ChevronLeft, ChevronRight, Shuffle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Shuffle, Lock } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/src/lib/supabase/client";
 import { validateBracketComplete } from "@/src/lib/supabase/queries/brackets-client";
@@ -29,6 +29,7 @@ export default function BracketWizard() {
     currentStep: "groups",
   });
   const [isLoadingInitialStep, setIsLoadingInitialStep] = useState(true);
+  const [submissionsClosed, setSubmissionsClosed] = useState(false);
   const [knockoutRound, setKnockoutRound] = useState<"r32" | "r16" | "qf" | "sf" | "final">("r32");
   const [knockoutRoundComplete, setKnockoutRoundComplete] = useState(false);
 
@@ -71,6 +72,7 @@ export default function BracketWizard() {
       .limit(1);
 
     if (!brackets || brackets.length === 0) {
+      setSubmissionsClosed(true);
       setIsLoadingInitialStep(false);
       return;
     }
@@ -304,6 +306,25 @@ export default function BracketWizard() {
         <div className="text-center py-12">
           <div className="text-gray-400">Loading your bracket...</div>
         </div>
+      </div>
+    );
+  }
+
+  if (submissionsClosed) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-16 pt-24 text-center">
+        <div className="flex items-center justify-center mb-6">
+          <div className="w-20 h-20 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center">
+            <Lock className="w-10 h-10 text-yellow-400" />
+          </div>
+        </div>
+        <h1 className="text-3xl font-bold text-white mb-3">Bracket Submissions Closed</h1>
+        <p className="text-gray-400 text-lg mb-8">
+          The deadline to create a World Cup 2026 bracket has passed. No new brackets can be submitted.
+        </p>
+        <Link href="/leaderboard" className="inline-flex items-center gap-2 px-6 py-3 bg-yellow-400 text-black rounded-lg font-semibold hover:bg-yellow-500 transition-colors">
+          View Leaderboard
+        </Link>
       </div>
     );
   }

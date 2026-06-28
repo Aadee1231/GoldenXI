@@ -192,7 +192,7 @@ export default async function LeaderboardPage({
                 )}
                 <div className="rounded-lg border border-blue-400/10 bg-blue-400/5 p-4 text-center">
                   <p className="text-xs leading-relaxed text-zinc-500">
-                    Group Stage: Up to 3 points per group · R32 1 · R16 6 · QF 8 · SF 12 · Final 20
+                    Group Stage: Up to 3 points per group · R32 4 · R16 6 · QF 8 · SF 12 · Final 20
                   </p>
                 </div>
               </div>
